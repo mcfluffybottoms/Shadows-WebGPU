@@ -1,10 +1,10 @@
 import * as THREE from 'three/webgpu'
 
 export function getRenderer(): THREE.WebGPURenderer {
-    const renderer: THREE.WebGPURenderer = new THREE.WebGPURenderer();
+    const renderer = new THREE.WebGPURenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
-    return renderer;
+    return renderer
 }
 
 export function addObject(geometry?: THREE.BufferGeometry, material?: THREE.Material): THREE.Mesh {
