@@ -1,5 +1,4 @@
 import * as THREE from "three/webgpu";
-import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
 
 export function getRenderer(): THREE.WebGPURenderer {

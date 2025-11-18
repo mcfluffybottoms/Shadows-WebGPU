@@ -1,9 +1,5 @@
 import * as THREE from "three/webgpu";
-import {
-  getRenderer,
-  loadAndAddObject,
-  loadMeshFromLink,
-} from "../../src/renderer";
+import { getRenderer, loadAndAddObject } from "../../src/renderer";
 import { addCamera, setupControls } from "../../src/camera";
 
 const scene = new THREE.Scene();
