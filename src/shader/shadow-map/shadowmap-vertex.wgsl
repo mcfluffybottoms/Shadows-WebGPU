@@ -40,4 +40,4 @@ fn main(v: Vertex) -> VertexOut {
     output.fragNorm = (object.normalMatrix * vec4f(v.normal, 0.0)).xyz;
     
     return output;
-    
+}

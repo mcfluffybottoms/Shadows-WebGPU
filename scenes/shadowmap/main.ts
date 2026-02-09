@@ -7,9 +7,10 @@ import {
 } from "../../src/loader";
 import { addCamera, CameraType, setupControlsCanvas } from "../../src/camera";
 import { getWebGPU } from "../../src/webgpu_data";
-import { depthPass, shadowPass } from "../../src/shadow";
 import { pointLight } from "../../src/light";
-import { renderDepthPass } from "../../src/shadowDebug";
+import { initRenderDepthPass, renderDepthPass } from "../../src/shadowDebug";
+import { depthPass, getDepthMap, initDepthPass } from "../../src/depthPass";
+import { initShadowPass, shadowPass } from "../../src/shadowPass";
 
 // ---- get webgpu data ---- //
 const gpu = await getWebGPU();
@@ -95,16 +96,22 @@ document.getElementById('render')?.addEventListener('change', () => {
   }
 });
 
+// init renderpass data 
+//// gpu: webGPUData, entities: Entity[]
+const depthMap = getDepthMap(gpu, 1024);
+const depthPassResources = await initDepthPass(gpu, entities);
+const shadowPassResources = await initShadowPass(gpu, entities, depthMap);
+const renderDepthPassResources = await initRenderDepthPass(gpu, depthMap);
+
 // // MAIN LOOP
 async function animate() {
   controls.update();
-  //entities[entities.length - 1].modelMatrix.setPosition(light.camera.position);
   const encoder = gpu.device.createCommandEncoder();
-  const depthMapData = await depthPass(shadowMap, gpu, entities, encoder, light);
+  await depthPass(depthMap, depthPassResources, gpu, entities, encoder, light);
   if(render == renderWhat.depth) {
-    await renderDepthPass(shadowMap, gpu, entities, depthMapData, encoder, light);
+    await renderDepthPass(renderDepthPassResources, gpu, depthMap, encoder, light);
   } else {
-    await shadowPass(shadowMap, gpu, entities, depthMapData, encoder, light, mainCamera);
+    await shadowPass(shadowPassResources, gpu, encoder, depthMap, entities, light, mainCamera);
   }
   gpu.device.queue.submit([encoder.finish()]);
 
