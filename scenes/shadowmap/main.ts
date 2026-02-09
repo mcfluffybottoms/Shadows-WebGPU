@@ -1,37 +1,114 @@
 import * as THREE from "three/webgpu";
 import {
+  getModelBuffers,
+  getModelBuffersFromMesh,
   getRenderer,
   loadAndAddObject,
-  loadMeshFromLink,
-} from "../../src/renderer";
-import { addCamera, setupControls } from "../../src/camera";
+} from "../../src/loader";
+import { addCamera, CameraType, setupControlsCanvas } from "../../src/camera";
+import { getWebGPU } from "../../src/webgpu_data";
+import { depthPass, shadowPass } from "../../src/shadow";
+import { pointLight } from "../../src/light";
+import { renderDepthPass } from "../../src/shadowDebug";
 
-const scene = new THREE.Scene();
-scene;
-const grid = new THREE.GridHelper(1000, 1000, 0x0c0c0c0, 0xdcdcdc);
-scene.add(grid);
+// ---- get webgpu data ---- //
+const gpu = await getWebGPU();
 
-const camera = addCamera();
-camera.position.set(21.6, 4.3, -18);
-camera.rotation.set(-2.6, 0.4, 2.9);
+// ---- setup scene ---- //
+let mainCamera = addCamera(gpu, CameraType.Perspective);
 
 const renderer = getRenderer();
-
-const obj = await loadAndAddObject("/itmo.obj", scene);
+const obj = await loadAndAddObject("/itmo.obj");
 if (obj) {
   obj.scale.setScalar(0.0001);
-  scene.add(obj);
+  obj.position.set(0, 0, 0);
+  obj.updateMatrixWorld(true);
 } else {
-  console.error("not loaded");
+  throw new Error("NO OBJ!");
+}
+let entities = getModelBuffers(gpu, obj);
+if(!entities) {
+  throw new Error("NO meshes!");
 }
 
-const controls = setupControls(camera, renderer);
+export function createEntityFromGeometry(geom: THREE.BufferGeometry, pos: {x: number, y: number, z: number}) {
+  const mesh = new THREE.Mesh(geom);
+  mesh.position.set(pos.x, pos.y, pos.z);
+  mesh.updateMatrixWorld();
+  const entity = { 
+    mesh: getModelBuffersFromMesh(gpu, mesh), 
+    modelMatrix: mesh.matrixWorld
+  };
+  return entity;
+}
 
-function animate() {
+const plane = createEntityFromGeometry(new THREE.PlaneGeometry(50, 45), {x: 50, y: 25, z: 25});
+plane.modelMatrix.makeRotationX(-Math.PI /2 );
+entities.push(plane);
+
+const cube = createEntityFromGeometry(new THREE.BoxGeometry(6, 6, 6), {x: 5, y: 3.1, z: -5});
+entities.push(cube);
+
+const sphere = createEntityFromGeometry(new THREE.SphereGeometry(4), {x: 8, y: 4.1, z: 10});
+entities.push(sphere);
+// light visual 
+
+const cone = createEntityFromGeometry(new THREE.ConeGeometry(4, 10), {x: 0, y: 5.1, z: 10});
+entities.push(cone);
+
+// ---- DEPTH MAP ---- //
+
+// create shadowmap
+const shadowMap = { shadowDepthTextureSize: 1024 };
+const light = new pointLight(gpu);
+let controls = setupControlsCanvas(mainCamera, gpu.canvas);
+
+
+// const lightVis = createEntityFromGeometry(new THREE.BoxGeometry(1, 1, 1), light.camera.position);
+// entities.push(lightVis);
+
+document.getElementById('changePos')?.addEventListener('change', () => { 
+  const cameraSelect = document.getElementById('changePos') as HTMLSelectElement;
+  if (controls && controls.dispose) {
+    controls.dispose();
+  }
+  if(cameraSelect.value == "1") {
+    console.log("cameraSelect.value == 0");
+    controls = setupControlsCanvas(light.camera, gpu.canvas);
+  } else {
+    console.log("cameraSelect.value == 1");
+    controls = setupControlsCanvas(mainCamera, gpu.canvas);
+  }
+});
+
+enum renderWhat {
+  depth,
+  shadow
+}
+let render = renderWhat.shadow;
+document.getElementById('render')?.addEventListener('change', () => { 
+  const cameraSelect = document.getElementById('render') as HTMLSelectElement;
+  if(cameraSelect.value == "0") {
+    render = renderWhat.shadow;
+  } else {
+    render = renderWhat.depth;
+  }
+});
+
+// // MAIN LOOP
+async function animate() {
   controls.update();
-  console.log(camera.position);
-  console.log(camera.rotation);
-  renderer.render(scene, camera);
+  //entities[entities.length - 1].modelMatrix.setPosition(light.camera.position);
+  const encoder = gpu.device.createCommandEncoder();
+  const depthMapData = await depthPass(shadowMap, gpu, entities, encoder, light);
+  if(render == renderWhat.depth) {
+    await renderDepthPass(shadowMap, gpu, entities, depthMapData, encoder, light);
+  } else {
+    await shadowPass(shadowMap, gpu, entities, depthMapData, encoder, light, mainCamera);
+  }
+  gpu.device.queue.submit([encoder.finish()]);
+
+  requestAnimationFrame(animate);
 }
 
-renderer.setAnimationLoop(animate);
+requestAnimationFrame(animate);

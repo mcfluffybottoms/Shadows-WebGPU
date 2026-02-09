@@ -5,10 +5,36 @@
     <title>Map with Shadow Maps</title>
     <style>
       body { margin: 0; }
+      #canvas {
+        display: block;
+        max-width: 1024px;
+        max-height: 1024px;
+        width: 1024px;
+        height: 1024px;
+        min-height: 1024px;
+        min-width: 1024px;
+        width: 100%;
+        height: 100%;
+        pointer-events: all;
+      }
     </style>
   </head>
   <body>
+
+    <select id="cameraType">
+      <option value="0">Orthographic</option>
+      <option value="1" selected>Perspective</option>
+    </select>
+    <select id="changePos" default>
+      <option value="0" selected>Camera</option>
+      <option value="1">Light</option>
+    </select>
+    <select id="render">
+      <option value="0" selected>Shadow Map</option>
+      <option value="1">Depth Map</option>
+    </select>
     <script type="module" src="main.ts"></script>
+    <canvas id="canvas"></canvas>
   </body>
 </html>
     
