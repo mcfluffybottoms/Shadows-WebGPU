@@ -1,23 +1,20 @@
-import { getVP, lightSource } from "./light";
-import { webGPUData } from "./webgpu_data";
+import { LightSource } from "../scene/light-types";
+import { webGPUData } from "../utils/webgpu-data";
 import { depthMap } from "./depthPass";
 
-import debugDepthVertex from './shader/shadow-map/debug-depth-map.wgsl?raw';
-import debugDepthFragment from './shader/shadow-map/debug-depth-map-frag.wgsl?raw';
+import debugDepthVertex from '../shader/shadow-map/debug-depth-map.wgsl?raw';
+import debugDepthFragment from '../shader/shadow-map/debug-depth-map-frag.wgsl?raw';
 
-export interface renderDepthPassResources {
+export type renderDepthPassResources = {
     pipeline: GPURenderPipeline;
     bindGroup: GPUBindGroup;
-
-    // buffers
-    lightBuffer: GPUBuffer;
 };
 
 export async function initRenderDepthPass(
     gpu: webGPUData,
     d: depthMap
 ) : Promise<renderDepthPassResources> {
-    const { depthTextureView } = d;
+    const { depthTexture } = d;
 
     const pipeline = gpu.device.createRenderPipeline({
         vertex: {
@@ -33,17 +30,16 @@ export async function initRenderDepthPass(
         layout: "auto",
     });
 
-    const lightBuffer = gpu.device.createBuffer({
-        size: 16 * Float32Array.BYTES_PER_ELEMENT,
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-    });
-
     const bindGroup =  gpu.device.createBindGroup({
         layout: pipeline.getBindGroupLayout(0),
         entries: [
             {
                 binding: 0,
-                resource: depthTextureView
+                resource: depthTexture.createView({
+                        baseArrayLayer: 0,
+                        arrayLayerCount: 1,
+                        dimension: '2d'
+                    })
             },
             {
                 binding: 1,
@@ -52,21 +48,14 @@ export async function initRenderDepthPass(
         ]
     });
 
-    return { pipeline, lightBuffer, bindGroup };
+    return { pipeline, bindGroup };
 }
 export async function renderDepthPass(
     resources: renderDepthPassResources,
     gpu: webGPUData,
-    d: depthMap,
-    encoder: GPUCommandEncoder,
-    light: lightSource
+    encoder: GPUCommandEncoder
 ) {
-    const { depthTextureView } = d;
-    const { pipeline, lightBuffer, bindGroup } = resources;
-
-    // connects shader to light perspective
-    const matrixArray = getVP(gpu, light.camera);
-    gpu.device.queue.writeBuffer(lightBuffer, 0, matrixArray);
+    const { pipeline, bindGroup } = resources;
 
     const renderPass = encoder.beginRenderPass({
         colorAttachments: [{
@@ -78,6 +67,6 @@ export async function renderDepthPass(
     });
     renderPass.setPipeline(pipeline);
     renderPass.setBindGroup(0, bindGroup);
-    renderPass.draw(6);
+    renderPass.draw(6 * 4);
     renderPass.end();
 }

@@ -1,29 +1,37 @@
-override shadowDepthTextureSize: f32 = 1024.0;
+const MAX_CASCADES = 16;
 
-struct LightUniforms {
-    viewProjMatrix: mat4x4<f32>,
+// ----- SCENE SETUP ----- // 
+struct LightOptionsUniforms {
     pos: vec4f,
     dir: vec4f,
+    splits: array<vec4f, MAX_CASCADES>
 };
-struct CameraUniforms {
-    viewProjMatrix: mat4x4<f32>,
-    pos: vec4f,
+struct Config {
+    shadowMapOn: u32,
+    samplesPerSide: u32,
+    numOfCascades: u32
 };
+
+
+@group(0) @binding(2) var depthTex: texture_depth_2d_array;
+@group(0) @binding(3) var depthSampler: sampler_comparison;
+// // ----- SCENE SETUP ----- // 
+
 struct FragmentIn {
     @location(0) fragPosLightSpace: vec4<f32>,
     @location(1) fragPos: vec3<f32>,
     @location(2) fragNorm: vec3<f32>,
+    @location(3) cascadeId: u32,
 }
 
-@group(0) @binding(0) var<uniform> camera: CameraUniforms;
-@group(0) @binding(1) var<uniform> light: LightUniforms;
-@group(0) @binding(3) var depthTex: texture_depth_2d;
-@group(0) @binding(4) var depthSampler: sampler_comparison;
+@group(1) @binding(1) var<uniform> light: LightOptionsUniforms;
+@group(1) @binding(2) var<uniform> config: Config;
+
 
 const albedo = vec3f(0.9);
 const ambientFactor = 0.1;
 
-fn shadowCalculation(in: FragmentIn) -> f32 {
+fn shadowCalculation(in: FragmentIn, normal: vec3f, lightDir: vec3f) -> f32 {
     var projCoords = in.fragPosLightSpace.xyz / in.fragPosLightSpace.w;
     projCoords.x = projCoords.x *0.5 + 0.5;
     projCoords.y = -projCoords.y *0.5 + 0.5;
@@ -32,23 +40,44 @@ fn shadowCalculation(in: FragmentIn) -> f32 {
         projCoords.y < 0.0 || projCoords.y > 1.0) {
         return 1.0;
     }
-    let lightDir = normalize(light.dir.xyz);
-    let bias = max(0.05 * (1.0 - dot(normalize(in.fragNorm), lightDir)), 0.0005);
+    
     // smoothing
     var shadow = 0.0;
     let texelSize = 1.0 / vec2f(textureDimensions(depthTex));
-    for(var i = -1; i <= 1; i++) {
-        for(var j = -1; j <= 1; j++) {
+    
+    let maxBias = 0.01;
+    let baseBias = 0.005;
+    let dx = dpdx(projCoords.z);
+    let dy = dpdy(projCoords.z);
+    let slopeScale = abs(dx) + abs(dy);
+    let bias = min(baseBias + slopeScale * 0.5, maxBias);
+    
+    let texSize = vec2f(textureDimensions(depthTex));
+    let snappedCoords = vec2f(
+        floor(projCoords.x * texSize.x) / texSize.x + texelSize.x * 0.5,
+        floor(projCoords.y * texSize.y) / texSize.y + texelSize.y * 0.5
+    );
+    let halfWindow = i32(config.samplesPerSide) / 2;
+    for(var i = -1 * halfWindow; i <= halfWindow; i++) {
+        for(var j = -1 * halfWindow; j <= halfWindow; j++) {
             let offset = vec2f(f32(i), f32(j)) * texelSize;
+
+            // set cascade id
+
             shadow += textureSampleCompare(
                 depthTex, 
                 depthSampler,
-                projCoords.xy + offset,
-                projCoords.z - 0.01
+                snappedCoords + offset,
+                in.cascadeId,
+                projCoords.z - bias
             );
         }
     }
-    shadow /= 9.0;
+    shadow /= f32(config.samplesPerSide) * f32(config.samplesPerSide);
+
+    if(shadow > 1.0) {
+        return 1.0;
+    }
     
     return shadow;
 }
@@ -66,7 +95,10 @@ fn main(in: FragmentIn) -> @location(0) vec4f {
     let diffuse = diff * vec3f(1.0, 1.0, 1.0);
 
     // shadow
-    let shadow = shadowCalculation(in);
+    var shadow = 1.0;
+    if(config.shadowMapOn == 1) {
+        shadow = shadowCalculation(in, normal, lightDir);
+    }
 
     // lighting
     let lighting = (ambientFactor + (shadow) * (diffuse + 0.0)) * color;

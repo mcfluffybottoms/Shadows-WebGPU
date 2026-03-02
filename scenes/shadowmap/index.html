@@ -1,40 +1,68 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <title>Map with Shadow Maps</title>
-    <style>
-      body { margin: 0; }
-      #canvas {
-        display: block;
-        max-width: 1024px;
-        max-height: 1024px;
-        width: 1024px;
-        height: 1024px;
-        min-height: 1024px;
-        min-width: 1024px;
-        width: 100%;
-        height: 100%;
-        pointer-events: all;
-      }
-    </style>
-  </head>
-  <body>
 
-    <select id="cameraType">
-      <option value="0">Orthographic</option>
-      <option value="1" selected>Perspective</option>
-    </select>
-    <select id="changePos" default>
-      <option value="0" selected>Camera</option>
-      <option value="1">Light</option>
-    </select>
-    <select id="render">
-      <option value="0" selected>Shadow Map</option>
-      <option value="1">Depth Map</option>
-    </select>
-    <script type="module" src="main.ts"></script>
-    <canvas id="canvas"></canvas>
-  </body>
+<head>
+  <meta charset="utf-8">
+  <title>Map with Shadow Maps</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+  <div class="settings">
+    <details>
+      <summary>Camera Settings:</summary>
+      <div class="settings-block">
+        <div class="group"></div>
+        Camera Type:
+        <select id="cameraType" data-default="0">
+          <option value="0" selected>Perspective</option>
+          <option value="1">Orthographic</option>
+        </select>
+        Camera to Move:
+        <select id="changePos" data-default="0">
+          <option value="0" selected>Camera</option>
+          <option value="1">Light</option>
+        </select>
+      </div>
+    </details>
+    <details>
+      <summary>Render Settings:</summary>
+      <div class="settings-block">
+        <div class="group"></div>
+        Render Settings:
+        <select id="render" data-default="0">
+          <option value="0" selected>Scene</option>
+          <option value="1">Depth Map</option>
+        </select>
+      </div>
+    </details>
+    <details>
+      <summary>Shadow Map Settings:</summary>
+      <div class="settings-block">
+        <div class="group"></div>
+        Shadow Map:
+        <input id="shadowMapOn" type="checkbox"/>
+        <br/>
+        Number of Samples Under Root: 
+        <input id="numberOfSamples" type="number" min="0" max="20" step="2"/>
+        <br/>
+        Number of Cascades: 
+        <input id="numberOfCascades" type="number" min="1" max="16" step="1"/>
+        <br/>
+        Depth Pass Size: 
+        <input id="depthPassSize" type="number" min="0" max="16384"/>
+      </div>
+    </details>
+  </div>
+
+
+  <script type="module" src="main.ts"></script>
+  <canvas id="canvas"></canvas>
+
+  <div class="stats">
+    <p id="fps-counter">FPS: 0</p>
+    <p id="mpf-counter">MIN MPF: 0 | AVG MPF: 0 | MAX MPF: 0</p>
+  </div>
+</body>
+
 </html>
-    

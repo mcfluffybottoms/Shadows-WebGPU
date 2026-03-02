@@ -1,11 +1,17 @@
+const MAX_CASCADES = 16;
+
 struct LightUniforms {
-    viewProjMatrix: mat4x4<f32>,
+    viewProjMatrix: array<mat4x4<f32>, MAX_CASCADES>,
+};
+struct LightOptionsUniforms {
     pos: vec4f,
     dir: vec4f,
+    splits: array<vec4f, MAX_CASCADES>
 };
 struct CameraUniforms {
     viewProjMatrix: mat4x4<f32>,
-    pos: vec4f,
+    viewMatrix: mat4x4<f32>,
+    pos: vec4f
 };
 struct ObjectUniforms {
     modelMatrix : mat4x4<f32>,
@@ -19,17 +25,43 @@ struct VertexOut {
     @location(0) fragPosLightSpace: vec4<f32>,
     @location(1) fragPos: vec3<f32>,
     @location(2) fragNorm: vec3<f32>,
+    @location(3) @interpolate(flat) cascadeId: u32,
     @builtin(position) Position: vec4f,
+};
+struct Config {
+    shadowMapOn: u32,
+    samplesPerSide: u32,
+    numOfCascades: u32
 };
 
 @group(0) @binding(0) var<uniform> camera: CameraUniforms;
-@group(0) @binding(1) var<uniform> light: LightUniforms;
-@group(0) @binding(2) var<uniform> object: ObjectUniforms;
+@group(0) @binding(1) var<uniform> object: ObjectUniforms;
+@group(1) @binding(0) var<uniform> light: LightUniforms;
+@group(1) @binding(1) var<uniform> lightOptions: LightOptionsUniforms;
+@group(1) @binding(2) var<uniform> config: Config;
+
+fn getCascadeId(depth: f32) -> u32 {
+    let numOfCascades = i32(config.numOfCascades);
+    for (var i = 0; i < numOfCascades; i++) {
+        if (depth < lightOptions.splits[i].y) {
+            return u32(i);
+        }
+    }
+    return u32(numOfCascades - 1);
+}
+
 @vertex
 fn main(v: Vertex) -> VertexOut {
     let worldPos = object.modelMatrix * vec4f(v.position, 1.0);
+
+    // select based on view
+    let viewPos = camera.viewMatrix * worldPos;
+    let depth = viewPos.z * 0.5 + 0.5; 
+    var cascadeId = getCascadeId(depth);
+    //var cascadeId = 3u;
+
     let posi = camera.viewProjMatrix * worldPos;
-    let lightPos = light.viewProjMatrix * worldPos;
+    let lightPos = light.viewProjMatrix[cascadeId] * worldPos;
     
     let posFromLight = lightPos;
     
@@ -38,6 +70,8 @@ fn main(v: Vertex) -> VertexOut {
     output.Position = posi;
     output.fragPos = worldPos.xyz;
     output.fragNorm = (object.normalMatrix * vec4f(v.normal, 0.0)).xyz;
+
+    output.cascadeId = cascadeId;
     
     return output;
 }
