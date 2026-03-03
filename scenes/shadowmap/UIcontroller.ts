@@ -27,6 +27,7 @@ export let UI = {
     numberOfSamples: 4,
     depthPassSize: 1024,
     numOfCascades: 4,
+    depthMapCascade: 1,
 };
 // dirty flags
 export let UIchanged = {

@@ -12,12 +12,12 @@ export function createConfigBuffers(
     //number of samples
 
     const configBuffer = gpu.device.createBuffer({
-        size: 3 * Uint32Array.BYTES_PER_ELEMENT,
+        size: 4 * Uint32Array.BYTES_PER_ELEMENT,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         label: "shadowsOnOff-NumberOfSamples"
     });
 
-    const configBufferSize = 3 * Uint32Array.BYTES_PER_ELEMENT;
+    const configBufferSize = 4 * Uint32Array.BYTES_PER_ELEMENT;
 
     return {
         configBuffer, configBufferSize

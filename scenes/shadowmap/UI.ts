@@ -1,5 +1,13 @@
 import { cameraWhat, controllingWhat, renderWhat, UI, UIchanged } from "./UIcontroller";
 
+function hideDivElementById(shouldHide: boolean, id: string) {
+    let htmlElement = document.getElementById(id);
+    if (htmlElement) {
+        htmlElement.style.display = shouldHide ? "none" : "block";
+    } else {
+        console.error("Element with id '" + id + "' not found.");
+    }
+}
 export function initUInteractions(): void {
     (document.getElementById('changePos') as HTMLSelectElement).value = '0';
     (document.getElementById('render') as HTMLSelectElement).value = '0';
@@ -8,6 +16,13 @@ export function initUInteractions(): void {
     (document.getElementById('numberOfSamples') as HTMLInputElement).value = UI.numberOfSamples.toString();
     (document.getElementById('depthPassSize') as HTMLInputElement).value = UI.depthPassSize.toString();
     (document.getElementById('numberOfCascades') as HTMLInputElement).value = UI.numOfCascades.toString();
+    (document.getElementById('shadowMapOn') as HTMLInputElement).checked = true;
+
+    hideDivElementById(UI.shadowMap, "depthMapSettings");
+    let htmlElement = document.getElementById('depthCascade') as HTMLInputElement;
+    htmlElement.max = UI.numOfCascades.toString();
+    htmlElement.value = "1";
+    UI.depthMapCascade = 1;
 
     // change controls
     document.getElementById('changePos')?.addEventListener('change', () => {
@@ -20,6 +35,7 @@ export function initUInteractions(): void {
     document.getElementById('render')?.addEventListener('change', () => {
         const renderSelect = document.getElementById('render') as HTMLSelectElement;
         UI.renderWhat = renderSelect.value == "0" ? renderWhat.scene : renderWhat.depthMap;
+        hideDivElementById(UI.renderWhat == renderWhat.scene, "depthMapSettings");
     });
 
     // change view - render depth pass or shadow maps
@@ -29,10 +45,17 @@ export function initUInteractions(): void {
         UIchanged.cameraWhat = true;
     });
 
-    // change shadow map
+    // change shadow map on/off
     document.getElementById('shadowMapOn')?.addEventListener('change', () => {
         const shadowMapCheckbox = document.getElementById('shadowMapOn') as HTMLInputElement;
         UI.shadowMap = shadowMapCheckbox.checked;
+        UIchanged.configChanged = true;
+    });
+
+    // change depth map cascade
+    document.getElementById('depthCascade')?.addEventListener('change', () => {
+        const samplesInput = document.getElementById('depthCascade') as HTMLInputElement;
+        UI.depthMapCascade = samplesInput.valueAsNumber;
         UIchanged.configChanged = true;
     });
 
@@ -43,10 +66,17 @@ export function initUInteractions(): void {
         UIchanged.configChanged = true;
     });
 
+    // change number of cascades
     document.getElementById('numberOfCascades')?.addEventListener('change', () => {
         const samplesInput = document.getElementById('numberOfCascades') as HTMLInputElement;
         UI.numOfCascades = samplesInput.valueAsNumber;
         UIchanged.configChanged = true;
+
+        // get new max and value
+        let htmlElement = document.getElementById('depthCascade') as HTMLInputElement;
+        htmlElement.max = UI.numOfCascades.toString();
+        htmlElement.value = "1";
+        UI.depthMapCascade = 1;
     });
 
     // change depth pass size

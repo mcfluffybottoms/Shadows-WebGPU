@@ -79,10 +79,10 @@ export function changeProjectionMatrix(
 export function getProjMatrix(camera: THREE.OrthographicCamera | THREE.PerspectiveCamera, zNear?: number, zFar?: number): THREE.Matrix4 {
     var projMatrix;
 
-    if(!zNear) {
+    if(zNear == undefined) {
         zNear = camera.near;
     }
-    if(!zFar) {
+    if(zFar == undefined) {
         zFar = camera.far;
     }
 

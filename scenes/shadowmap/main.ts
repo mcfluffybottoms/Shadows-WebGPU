@@ -141,7 +141,7 @@ const configBuffer = createConfigBuffers(gpu);
 var depthMap = getDepthMap(gpu, UI.depthPassSize, UI.numOfCascades);
 var depthPassResources = await initDepthPass(gpu, scene, buffers.lightBuffer, buffers.objectBuffer, configBuffer, UI.numOfCascades);
 var shadowPassResources = await initShadowPass(gpu, scene, depthMap, buffers, configBuffer, UI.numOfCascades);
-var renderDepthPassResources = await initRenderDepthPass(gpu, depthMap);
+var renderDepthPassResources = await initRenderDepthPass(gpu, depthMap, UI.depthMapCascade);
 
 async function renderColor(encoder: GPUCommandEncoder) {
   if (UI.renderWhat == renderWhat.depthMap) {
@@ -154,8 +154,9 @@ async function renderColor(encoder: GPUCommandEncoder) {
 async function updateSettings() {
   if (UIchanged.depthPassSizeChanged || UIchanged.configChanged) {
     depthMap = getDepthMap(gpu, UI.depthPassSize, UI.numOfCascades);
+    depthPassResources = await initDepthPass(gpu, scene, buffers.lightBuffer, buffers.objectBuffer, configBuffer, UI.numOfCascades);
     shadowPassResources = await initShadowPass(gpu, scene, depthMap, buffers, configBuffer, UI.numOfCascades);
-    renderDepthPassResources = await initRenderDepthPass(gpu, depthMap);
+    renderDepthPassResources = await initRenderDepthPass(gpu, depthMap, UI.depthMapCascade);
     UIchanged.depthPassSizeChanged = false;
   }
   changeConfig(gpu, configBuffer);
@@ -171,13 +172,13 @@ let mpf = 0;
 let mpfHistory: number[] = [];
 async function animate() {
   await updateSettings();
+  light.update(mainCamera, UI.numOfCascades, UI.depthPassSize);
+  
 
   const frameStart = performance.now();
 
   const encoder = gpu.device.createCommandEncoder();
   fillSceneBuffers(gpu, buffers, scene, UI.numOfCascades);
-
-  light.update(mainCamera, UI.numOfCascades);
 
   await depthPass(depthMap, depthPassResources, gpu, encoder, scene, UI.numOfCascades);
   await renderColor(encoder);

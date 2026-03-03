@@ -4,6 +4,7 @@ import { depthMap } from "./depthPass";
 
 import debugDepthVertex from '../shader/shadow-map/debug-depth-map.wgsl?raw';
 import debugDepthFragment from '../shader/shadow-map/debug-depth-map-frag.wgsl?raw';
+import { UI } from "../../scenes/shadowmap/UIcontroller";
 
 export type renderDepthPassResources = {
     pipeline: GPURenderPipeline;
@@ -12,7 +13,8 @@ export type renderDepthPassResources = {
 
 export async function initRenderDepthPass(
     gpu: webGPUData,
-    d: depthMap
+    d: depthMap,
+    depthMapCascade: number
 ) : Promise<renderDepthPassResources> {
     const { depthTexture } = d;
 
@@ -36,7 +38,7 @@ export async function initRenderDepthPass(
             {
                 binding: 0,
                 resource: depthTexture.createView({
-                        baseArrayLayer: 0,
+                        baseArrayLayer: depthMapCascade - 1,
                         arrayLayerCount: 1,
                         dimension: '2d'
                     })

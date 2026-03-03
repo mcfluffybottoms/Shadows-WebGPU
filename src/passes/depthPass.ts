@@ -132,7 +132,7 @@ export async function depthPass(
 
         const lightGroup = lightBindGroups[i];
 
-        depthPass.setViewport(0, 0, d.depthTextureSize, d.depthTextureSize, 0, 1);
+        //depthPass.setViewport(0, 0, d.depthTextureSize, d.depthTextureSize, 0, 1);
         depthPass.setPipeline(pipeline);
         for (let j = 0; j < entities.length; ++j) {
             const { mesh } = entities[j];

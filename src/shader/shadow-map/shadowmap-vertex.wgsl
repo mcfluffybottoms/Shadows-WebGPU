@@ -43,7 +43,7 @@ struct Config {
 fn getCascadeId(depth: f32) -> u32 {
     let numOfCascades = i32(config.numOfCascades);
     for (var i = 0; i < numOfCascades; i++) {
-        if (depth < lightOptions.splits[i].y) {
+        if (depth <= lightOptions.splits[i].y) {
             return u32(i);
         }
     }
