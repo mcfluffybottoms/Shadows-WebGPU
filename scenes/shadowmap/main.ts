@@ -5,14 +5,14 @@ import {
   loadAndAddObject,
 } from "../../src/utils/loader";
 import { getWebGPU } from "../../src/utils/webgpu-data";
-import { DirectionalLight, getFrustumCorners, LightControls } from "../../src/scene/light-types";
+import { DirectionalLight, getFrustumCorners } from "../../src/scene/light-types";
 import { initRenderDepthPass, renderDepthPass } from "../../src/passes/depthMapDebug";
 import { depthPass, getDepthMap, initDepthPass } from "../../src/passes/depthPass";
 import { initShadowPass, shadowPass } from "../../src/passes/shadowPass";
 import { createSceneBuffers, fillSceneBuffers } from "../../src/scene/scene-buffers";
 import { addCamera, CameraType } from "../../src/utils/camera-utils";
 import { OrbitControls } from "three/examples/jsm/Addons.js";
-import { cameraWhat, changeConfig, changeControls, controllingWhat, renderWhat, UI, UIchanged } from "./UIcontroller";
+import { cameraWhat, changeConfig, controllingWhat, renderWhat, UI, UIchanged } from "./UIcontroller";
 import { changeFPS, changeMPF, initUInteractions } from "./UI";
 import { Scene } from "../../src/scene/scene-types";
 import { createConfigBuffers } from "../../src/config/config-buffers";
@@ -44,32 +44,10 @@ let mainControls = perspectiveControls;
 
 // light source
 const light = new DirectionalLight(mainCamera, UI.numOfCascades);
-const lightControls = new LightControls(gpu.canvas, light);
-lightControls.update();
-lightControls.disconnect();
 
 // ------ SETUP UI ------ //
 
 initUInteractions();
-changeControls(mainControls, lightControls, gpu.canvas);
-
-function updateControls() {
-  if (UI.controllingWhat == controllingWhat.camera) {
-    mainControls.update();
-  } else {
-    lightControls.update();
-  }
-  if (!UIchanged.controllingWhat) return;
-  mainControls.disconnect();
-  lightControls.disconnect();
-  if (UI.controllingWhat == controllingWhat.camera) {
-    mainControls.connect(gpu.canvas);
-  } else {
-    lightControls.connect(gpu.canvas);
-  }
-
-  UIchanged.controllingWhat = false;
-}
 
 function updateCamera(scene: Scene) {
   if (UIchanged.cameraWhat) {
@@ -83,11 +61,7 @@ function updateCamera(scene: Scene) {
       mainCamera = perspectiveCamera;
       mainControls = perspectiveControls;
     }
-    if (UI.controllingWhat == controllingWhat.camera) {
-      mainControls.connect(gpu.canvas);
-    } else {
-      lightControls.connect(gpu.canvas);
-    }
+    mainControls.connect(gpu.canvas);
 
     scene.camera = mainCamera;
     UIchanged.cameraWhat = false;
@@ -111,7 +85,7 @@ if (!entities) {
   entities = [];
 }
 
-const plane = createEntityFromGeometry(gpu, new THREE.PlaneGeometry(50, 45), { x: 50, y: 25, z: 25 });
+const plane = createEntityFromGeometry(gpu, new THREE.BoxGeometry(50, 45, 1), { x: 50, y: 25, z: 25 });
 plane.modelMatrix.makeRotationX(-Math.PI / 2);
 entities.push(plane);
 
@@ -161,7 +135,12 @@ async function updateSettings() {
   }
   changeConfig(gpu, configBuffer);
   updateCamera(scene);
-  updateControls();
+}
+
+function changeDirection(light: DirectionalLight) : boolean {
+    light.direction = UI.direction;
+    UIchanged.directionChanged = false;
+    return true;
 }
 
 // ------ MAIN LOOP ------ //
@@ -172,6 +151,7 @@ let mpf = 0;
 let mpfHistory: number[] = [];
 async function animate() {
   await updateSettings();
+  if(UIchanged.directionChanged) changeDirection(light);
   light.update(mainCamera, UI.numOfCascades, UI.depthPassSize);
   
 

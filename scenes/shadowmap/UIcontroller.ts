@@ -1,7 +1,6 @@
 import * as THREE from "three/webgpu";
 
 import { OrbitControls } from "three/examples/jsm/Addons.js";
-import { LightControls } from "../../src/scene/light-types";
 import { ConfigBuffers, fillConfigBuffers } from "../../src/config/config-buffers";
 import { webGPUData } from "../../src/utils/webgpu-data";
 
@@ -28,6 +27,7 @@ export let UI = {
     depthPassSize: 1024,
     numOfCascades: 4,
     depthMapCascade: 1,
+    direction: new THREE.Vector3(1, 0.5, 1),
 };
 // dirty flags
 export let UIchanged = {
@@ -36,20 +36,8 @@ export let UIchanged = {
     configChanged: true,
     depthPassSizeChanged: false,
     numOfCascadesChanged: false,
+    directionChanged: false,
 };
-
-
-export function changeControls(mainControls: OrbitControls, lightControls: LightControls, canvas: HTMLCanvasElement) : boolean {
-    if(!UIchanged.controllingWhat) return false;
-    mainControls.disconnect();
-    lightControls.disconnect();
-    if (UI.controllingWhat == controllingWhat.camera) {
-        mainControls.connect(canvas);
-    } else {
-        lightControls.connect(canvas);
-    }
-    return true;
-}
 
 export function changeConfig(gpu: webGPUData, buffers: ConfigBuffers) : boolean {
     if(!UIchanged.configChanged) return false;

@@ -45,8 +45,8 @@ fn shadowCalculation(in: FragmentIn, normal: vec3f, lightDir: vec3f) -> f32 {
     var shadow = 0.0;
     let texelSize = 1.0 / vec2f(textureDimensions(depthTex));
     
-    let maxBias = 0.01;
-    let baseBias = 0.005;
+    let maxBias = 0.001;
+    let baseBias = 0.001;
     let dx = dpdx(projCoords.z);
     let dy = dpdy(projCoords.z);
     let slopeScale = abs(dx) + abs(dy);

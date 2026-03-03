@@ -18,6 +18,10 @@ export function initUInteractions(): void {
     (document.getElementById('numberOfCascades') as HTMLInputElement).value = UI.numOfCascades.toString();
     (document.getElementById('shadowMapOn') as HTMLInputElement).checked = true;
 
+    (document.getElementById('dirx') as HTMLSelectElement).value = UI.direction.x.toString();
+    (document.getElementById('diry') as HTMLSelectElement).value = UI.direction.y.toString();
+    (document.getElementById('dirz') as HTMLSelectElement).value = UI.direction.z.toString();
+
     hideDivElementById(UI.shadowMap, "depthMapSettings");
     let htmlElement = document.getElementById('depthCascade') as HTMLInputElement;
     htmlElement.max = UI.numOfCascades.toString();
@@ -86,6 +90,23 @@ export function initUInteractions(): void {
         UIchanged.depthPassSizeChanged = true;
     });
 
+    // change direction
+    document.getElementById('dirx')?.addEventListener('change', () => {
+        const sizeInput = document.getElementById('dirx') as HTMLInputElement;
+        UI.direction.x = sizeInput.valueAsNumber;
+        UIchanged.directionChanged = true;
+    });
+    document.getElementById('diry')?.addEventListener('change', () => {
+        const sizeInput = document.getElementById('diry') as HTMLInputElement;
+        UI.direction.y = sizeInput.valueAsNumber;
+        UIchanged.directionChanged = true;
+    });
+    document.getElementById('dirz')?.addEventListener('change', () => {
+        const sizeInput = document.getElementById('dirz') as HTMLInputElement;
+        UI.direction.z = sizeInput.valueAsNumber;
+        UIchanged.directionChanged = true;
+    });
+
 }
 
 export function changeFPS(fps: number) {
@@ -104,7 +125,5 @@ export function changeMPF(minMpf: number, avgMpf: number, maxMpf: number) {
         return;
     }
     mpfElement.textContent = 
-        "MIN MPF: " + (Math.round(minMpf * 100) / 100).toFixed(2).toString() + " | " + 
-        "AVG MPF: " + (Math.round(avgMpf * 100) / 100).toFixed(2).toString() + " | " + 
-        "MAX MPF: " + (Math.round(maxMpf * 100) / 100).toFixed(2).toString();
+        "AVG MPF: " + (Math.round(avgMpf * 100) / 100).toFixed(2).toString();
 }

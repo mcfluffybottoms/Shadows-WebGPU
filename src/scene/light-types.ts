@@ -61,7 +61,7 @@ export class DirectionalLight implements LightSource {
             radius = Math.max(radius, v.distanceTo(center));
         }
 
-        this.viewMatrix.lookAt(center, center.clone().sub(this.direction.clone().multiplyScalar(radius * 2.0)), this.upVector);
+        this.viewMatrix.lookAt(center, center.clone().add(this.direction.clone().multiplyScalar(radius * 2.0)), this.upVector);
         
         const box = corners.reduce(
             (box, corner) => {
@@ -115,7 +115,7 @@ export class DirectionalLight implements LightSource {
         
         for(var i = 0; i < numOfCascades; ++i) {
             const range = camera.far - camera.near;
-            const zNear = camera.near + range * (i / numOfCascades);
+            const zNear = camera.near;
             const zFar  = camera.near + range * ((i + 1) / numOfCascades);
             this.splits[i] = {
                 near: zNear,
@@ -154,38 +154,4 @@ export function getFrustumCorners(projMatrix: THREE.Matrix4, viewMatrix: THREE.M
         }
     }
     return corners;
-}
-
-export class LightControls {
-    constructor(canvas: HTMLCanvasElement, light: DirectionalLight) {
-        // this.controls = new OrbitControls(light.camera, canvas);
-        // this.controls.target.set(0, 0, 0);
-        // this.controls.enableRotate = true;
-        // this.controls.enableZoom = true;
-        // this.controls.enablePan = true;
-        // this.controls.update();
-        // this.controls.disconnect();
-
-        // this.light = light;
-    }
-    public update(deltaTime?: number | null): boolean {
-        // const updated = this.controls.update(deltaTime);
-        // if (updated) {
-        //     this.light.updateLight();
-        //     this.light.changeCamera(corners);
-        // }
-        // return updated;
-        return false;
-    }
-
-    public connect(canvas: HTMLCanvasElement) {
-        // console.log(this.controls.target);
-        // this.controls.connect(canvas);
-
-    }
-    public disconnect() {
-        // this.controls.disconnect();
-    }
-    // controls: OrbitControls;
-    // light: DirectionalLight;
 }
