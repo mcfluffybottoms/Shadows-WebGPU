@@ -123,7 +123,7 @@ export class DirectionalLight implements LightSource {
             };
 
             camera.updateMatrixWorld();
-            const projMatrix = getProjMatrix(camera, near, zFar);
+            const projMatrix = getProjMatrix(camera, zNear, zFar);
             const corners = getFrustumCorners(projMatrix, camera.matrixWorldInverse);
             this.updateViewProjMatrix(corners, shadowMapResolution);
             this.viewProjMatrix[i] = getVPraw(this.projMatrix, this.viewMatrix);
