@@ -112,17 +112,17 @@ export function initUInteractions(): void {
     });
 
     // change direction
-    document.getElementById('dirx')?.addEventListener('change', () => {
+    document.getElementById('dirx')?.addEventListener('input', () => {
         const sizeInput = document.getElementById('dirx') as HTMLInputElement;
         UI.direction.x = sizeInput.valueAsNumber;
         UIchanged.directionChanged = true;
     });
-    document.getElementById('diry')?.addEventListener('change', () => {
+    document.getElementById('diry')?.addEventListener('input', () => {
         const sizeInput = document.getElementById('diry') as HTMLInputElement;
         UI.direction.y = sizeInput.valueAsNumber;
         UIchanged.directionChanged = true;
     });
-    document.getElementById('dirz')?.addEventListener('change', () => {
+    document.getElementById('dirz')?.addEventListener('input', () => {
         const sizeInput = document.getElementById('dirz') as HTMLInputElement;
         UI.direction.z = sizeInput.valueAsNumber;
         UIchanged.directionChanged = true;
@@ -132,6 +132,7 @@ export function initUInteractions(): void {
     document.getElementById('biasType')?.addEventListener('change', () => {
         const sizeInput = document.getElementById('biasType') as HTMLInputElement;
         UI.biasType = sizeInput.valueAsNumber;
+        console.log(UI.biasType);
         UIchanged.configChanged = true;
     });
     document.getElementById('biasValue')?.addEventListener('change', () => {

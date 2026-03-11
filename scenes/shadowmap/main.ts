@@ -17,6 +17,8 @@ import { changeFPS, changeMPF, initUInteractions } from "./UI";
 import { Scene } from "../../src/scene/scene-types";
 import { createConfigBuffers } from "../../src/config/config-buffers";
 
+
+function initScene() {}
 // ---- get webgpu data ---- //
 const gpu = await getWebGPU();
 
@@ -114,6 +116,7 @@ var depthMap = getDepthMap(gpu, UI.depthPassSize, UI.numOfCascades);
 var depthPassResources = await initDepthPass(gpu, scene, buffers.lightBuffer, buffers.objectBuffer, configBuffer, UI.numOfCascades);
 var shadowPassResources = await initShadowPass(gpu, scene, depthMap, buffers, configBuffer, UI.numOfCascades);
 var renderDepthPassResources = await initRenderDepthPass(gpu, depthMap, UI.depthMapCascade);
+fillSceneBuffers(gpu, buffers, scene, UI.numOfCascades, {camera: true, light: true, object: true});
 
 async function renderColor(encoder: GPUCommandEncoder) {
   if (UI.renderWhat == renderWhat.depthMap) {
@@ -147,7 +150,14 @@ let frameCount = 0;
 let fps = 0;
 let mpf = 0;
 let mpfHistory: number[] = [];
+
+gpu.device.lost.then((info) => {
+  console.error(`WebGPU device was lost: ${info.message}`);
+});
+
 async function animate() {
+  //if lost device - try to reconnect
+
   await updateSettings();
   if(UIchanged.directionChanged) changeDirection(light);
   light.update(mainCamera, UI.numOfCascades, UI.depthPassSize);
@@ -156,7 +166,8 @@ async function animate() {
   const frameStart = performance.now();
 
   const encoder = gpu.device.createCommandEncoder();
-  fillSceneBuffers(gpu, buffers, scene, UI.numOfCascades);
+
+  fillSceneBuffers(gpu, buffers, scene, UI.numOfCascades, {camera: true, light: true, object: false});
 
   await depthPass(depthMap, depthPassResources, gpu, encoder, scene, UI.numOfCascades);
   await renderColor(encoder);

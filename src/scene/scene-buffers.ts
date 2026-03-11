@@ -54,58 +54,71 @@ export function createSceneBuffers(
     };
 }
 
+type bufferToFill = {
+    camera: boolean,
+    light: boolean,
+    object: boolean
+}
+
 export function fillSceneBuffers(
     gpu: webGPUData,
     buffers: SceneBuffers,
     scene: Scene,
-    numOfCascades: number
+    numOfCascades: number, 
+    flags: bufferToFill
 ) : SceneBuffers {
     const { cameraBuffer, lightBuffer, snatchedLightBuffer, objectBuffer, lightBufferOptions } = buffers;
     const { light, entities, camera } = scene;
 
     // camera buffer
-    const cameraMatrixArray =  new Float32Array(16 + 16 + 4);
-    cameraMatrixArray.set(new Float32Array(getVP(camera).elements), 0);
-    cameraMatrixArray.set(new Float32Array(camera.matrixWorldInverse.elements), 16);
-    cameraMatrixArray.set([camera.position.x, camera.position.y, camera.position.z, 1.0], 16 + 16);
-    gpu.device.queue.writeBuffer(cameraBuffer, 0, cameraMatrixArray);
-
-    // light buffer
-    const lightMatrixArray =  new Float32Array(64 * numOfCascades);
-    for(var i = 0; i < numOfCascades; ++i) {
-        lightMatrixArray.set(new Float32Array(light.viewProjMatrix[i].elements), 64 * i);
+    if(flags.camera) {
+       const cameraMatrixArray =  new Float32Array(16 + 16 + 4);
+        cameraMatrixArray.set(new Float32Array(getVP(camera).elements), 0);
+        cameraMatrixArray.set(new Float32Array(camera.matrixWorldInverse.elements), 16);
+        cameraMatrixArray.set([camera.position.x, camera.position.y, camera.position.z, 1.0], 16 + 16);
+        gpu.device.queue.writeBuffer(cameraBuffer, 0, cameraMatrixArray); 
     }
-    gpu.device.queue.writeBuffer(lightBuffer, 0, lightMatrixArray);
+    
+    if(flags.light) {
+        // light buffer
+        const lightMatrixArray =  new Float32Array(64 * numOfCascades);
+        for(var i = 0; i < numOfCascades; ++i) {
+            lightMatrixArray.set(new Float32Array(light.viewProjMatrix[i].elements), 64 * i);
+        }
+        gpu.device.queue.writeBuffer(lightBuffer, 0, lightMatrixArray);
 
-    // snatched light buffer
-    const snatchedLightMatrixArray =  new Float32Array(16 * MAX_CASCADES);
-    for(var i = 0; i < numOfCascades; ++i) {
-        snatchedLightMatrixArray.set(new Float32Array(light.viewProjMatrix[i].elements), 16 * i);
-    }
-    gpu.device.queue.writeBuffer(snatchedLightBuffer, 0, snatchedLightMatrixArray);
+        // snatched light buffer
+        const snatchedLightMatrixArray =  new Float32Array(16 * MAX_CASCADES);
+        for(var i = 0; i < numOfCascades; ++i) {
+            snatchedLightMatrixArray.set(new Float32Array(light.viewProjMatrix[i].elements), 16 * i);
+        }
+        gpu.device.queue.writeBuffer(snatchedLightBuffer, 0, snatchedLightMatrixArray);
 
-    // light buffer options
-    const lightMatrixOptionsArray =  new Float32Array(4 + 4 + 4 * numOfCascades);
-    lightMatrixOptionsArray.set([light.direction.x, light.direction.y, light.direction.z, 1.0], 0);
-    lightMatrixOptionsArray.set([light.direction.x, light.direction.y, light.direction.z, 1.0], 4);
-    for(var i = 0; i < numOfCascades; ++i) {
-        lightMatrixOptionsArray.set(new Float32Array([light.splits[i].near, light.splits[i].far, 1.0, 1.0]), 8 + 4 * i);
+        // light buffer options
+        const lightMatrixOptionsArray =  new Float32Array(4 + 4 + 4 * numOfCascades);
+        lightMatrixOptionsArray.set([light.direction.x, light.direction.y, light.direction.z, 1.0], 0);
+        lightMatrixOptionsArray.set([light.direction.x, light.direction.y, light.direction.z, 1.0], 4);
+        for(var i = 0; i < numOfCascades; ++i) {
+            lightMatrixOptionsArray.set(new Float32Array([light.splits[i].near, light.splits[i].far, 1.0, 1.0]), 8 + 4 * i);
+        }
+        gpu.device.queue.writeBuffer(lightBufferOptions, 0, lightMatrixOptionsArray);
     }
-    gpu.device.queue.writeBuffer(lightBufferOptions, 0, lightMatrixOptionsArray);
 
-    // object buffers
-    const modelMatrixArray =  new Float32Array(entities.length * 64);
-    for (let i = 0; i < entities.length; i++) {
-        const modelMatrix = entities[i].modelMatrix;
-        const normalMatrix = modelMatrix.clone().invert().transpose();
-        modelMatrixArray.set(modelMatrix.toArray(), i * 64);
-        modelMatrixArray.set(normalMatrix.toArray(), i * 64 + 16);
+    if(flags.object) {
+        // object buffers
+        const modelMatrixArray =  new Float32Array(entities.length * 64);
+        for (let i = 0; i < entities.length; i++) {
+            const modelMatrix = entities[i].modelMatrix;
+            const normalMatrix = modelMatrix.clone().invert().transpose();
+            modelMatrixArray.set(modelMatrix.toArray(), i * 64);
+            modelMatrixArray.set(normalMatrix.toArray(), i * 64 + 16);
+        }
+        gpu.device.queue.writeBuffer(
+            objectBuffer,
+            0,
+            modelMatrixArray
+        );
     }
-    gpu.device.queue.writeBuffer(
-        objectBuffer,
-        0,
-        modelMatrixArray
-    );
 
     return {
         snatchedLightBuffer,

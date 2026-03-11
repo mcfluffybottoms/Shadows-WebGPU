@@ -53,7 +53,7 @@ export class DirectionalLight implements LightSource {
         const center = getFrustumCenter(corners);
         const radius = 1.0;
 
-        const viewPos = center.clone().add(this.direction.clone().multiplyScalar(radius * 2.0));
+        const viewPos = center.clone().add(this.direction.clone());
         this.viewMatrix.lookAt(viewPos, center, this.upVector);
         
         const box = corners.reduce(
@@ -107,7 +107,7 @@ export class DirectionalLight implements LightSource {
         this.setViewProjMatrixSize(numOfCascades);
 
         for(var i = 0; i < numOfCascades; ++i) {
-            const lambda = 0;
+            const lambda = 0.2;
             const near = camera.near;
             const far = camera.far;
             const range = far - near;
