@@ -43,7 +43,7 @@ export function createSceneBuffers(
         size: OFFSET * entities.length,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         label: "objectBuffer-shadowPass"
-    });
+    }); // make it much smaller
 
     return {
         cameraBuffer,

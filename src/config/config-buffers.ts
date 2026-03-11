@@ -50,7 +50,5 @@ export function fillConfigBuffers(
     
     gpu.device.queue.writeBuffer(configBuffer, 0, dataArray);
     
-    console.log("Bias type:", uint32View[3]);
-    
     return buffers;
 }

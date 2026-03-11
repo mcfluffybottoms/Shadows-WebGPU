@@ -145,9 +145,9 @@ function getFrustumCorners(projMatrix: THREE.Matrix4, viewMatrix: THREE.Matrix4)
     const inv = getVPraw(projMatrix, viewMatrix).invert();
     const corners: THREE.Vector4[] = [];
 
-    for (var x = -1; x <= 1; x = x + 2) {
-        for (var y = -1; y <= 1; y = y + 2) {
-            for (var z = -1; z <= 1; z = z + 2) {
+    for (var x = -1; x <= 1; x = x + 1) {
+        for (var y = -1; y <= 1; y = y + 1) {
+            for (var z = -1; z <= 1; z = z + 1) {
                 const ndcPoint = new THREE.Vector4(x, y, z, 1.0);
                 const worldPoint = ndcPoint.applyMatrix4(inv);
                 corners.push(worldPoint.divideScalar(worldPoint.w));

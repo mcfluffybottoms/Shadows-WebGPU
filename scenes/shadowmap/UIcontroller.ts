@@ -31,7 +31,7 @@ export let UI = {
     direction: new THREE.Vector3(0.5, -0.5, 0.5),
     biasType: 0,
     biasValue: 0.001,
-    lightAmbient: 0.7,
+    lightAmbient: 0.3,
 };
 // dirty flags
 export let UIchanged = {

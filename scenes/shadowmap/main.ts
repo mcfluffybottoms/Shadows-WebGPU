@@ -68,9 +68,9 @@ function updateCamera(scene: Scene) {
 
 // ------ INIT SCENE ------ //
 // ---- setup objects to display on scene ---- //
-const obj = await loadAndAddObject("/assets/itmo.obj");
+const obj = await loadAndAddObject("/assets/with_mechet.glb");
 if (obj) {
-  obj.scale.setScalar(0.0001);
+  obj.scale.setScalar(0.1);
   obj.position.set(0, 0, 0);
   obj.updateMatrixWorld(true);
 } else {
@@ -87,17 +87,17 @@ const plane = createEntityFromGeometry(gpu, new THREE.BoxGeometry(50, 45, 1), { 
 plane.modelMatrix.makeRotationX(-Math.PI / 2);
 entities.push(plane);
 
-const cube = createEntityFromGeometry(gpu, new THREE.BoxGeometry(6, 6, 6), { x: 5, y: 3.1, z: -5 });
-entities.push(cube);
+// const cube = createEntityFromGeometry(gpu, new THREE.BoxGeometry(6, 6, 6), { x: 5, y: 3.1, z: -5 });
+// entities.push(cube);
 
-const sphere = createEntityFromGeometry(gpu, new THREE.SphereGeometry(4), { x: 8, y: 4.1, z: 10 });
-entities.push(sphere);
+// const sphere = createEntityFromGeometry(gpu, new THREE.SphereGeometry(4), { x: 8, y: 4.1, z: 10 });
+// entities.push(sphere);
 
-const cone = createEntityFromGeometry(gpu, new THREE.ConeGeometry(4, 10), { x: 0, y: 5.1, z: 10 });
-entities.push(cone);
+// const cone = createEntityFromGeometry(gpu, new THREE.ConeGeometry(4, 10), { x: 0, y: 5.1, z: 10 });
+// entities.push(cone);
 
-const dodecahedron = createEntityFromGeometry(gpu, new THREE.DodecahedronGeometry(3, 2), { x: -10, y: 4, z: -10 });
-entities.push(dodecahedron);
+// const dodecahedron = createEntityFromGeometry(gpu, new THREE.DodecahedronGeometry(3, 2), { x: -10, y: 4, z: -10 });
+// entities.push(dodecahedron);
 
 const scene = {
   entities, light, camera: mainCamera

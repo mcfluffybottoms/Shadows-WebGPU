@@ -135,8 +135,9 @@ fn main(in: FragmentIn) -> @location(0) vec4f {
     let normal = normalize(in.fragNorm);
 
     // light direction
-    let lightDir = normalize(-1 * lightOptions.dir.xyz);
-
+    var lightDir = normalize(-1 * lightOptions.dir.xyz);
+    lightDir.z = -1 * lightDir.z;
+    
     // diffuse
     let diff = max(dot(normal, lightDir), 0.0);
     let diffuse = diff * vec3f(1.0, 1.0, 1.0);

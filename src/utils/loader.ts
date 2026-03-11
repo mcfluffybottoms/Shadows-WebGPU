@@ -8,17 +8,12 @@ import { Entity, ModelBuffers } from "../scene/scene-types";
 
 export function loadMeshFromLink(path: string): Promise<THREE.Group> {
   return new Promise((resolve, reject) => {
-    const loader = new OBJLoader();
+    const loader = new GLTFLoader();
     loader.load(
       path,
       (root) => {
-        console.log("Children:", root.children);
-        root.traverse((child) => {
-          if (child instanceof THREE.Mesh) {
-            child.material = new THREE.MeshBasicMaterial({ color: 0x2f4f4f });
-          }
-        });
-        resolve(root);
+        console.log("Children:", root);
+        resolve(root.scene);
       },
       undefined,
       reject
@@ -85,19 +80,18 @@ const createIndexBuffer = (
     console.warn('No index data provided to createIndexBuffer');
     return null;
   }
+
+  const indexCount = triangles.array.length;
+  const dataSize = indexCount * Uint32Array.BYTES_PER_ELEMENT;
+  const alignedSize = Math.ceil(dataSize / 4) * 4;
   const buffer = gpu.device.createBuffer({
-    size: triangles.array.length * 3 * Uint16Array.BYTES_PER_ELEMENT,
+    size: alignedSize,
     usage: GPUBufferUsage.INDEX,
     mappedAtCreation: true,
   });
 
-  const mapping = new Uint16Array(buffer.getMappedRange());
-  for (let i = 0; i < triangles.array.length; ++i) {
-    const baseIndex = i * 3;
-    mapping[baseIndex] = triangles.array[baseIndex];
-    mapping[baseIndex + 1] = triangles.array[baseIndex + 1];
-    mapping[baseIndex + 2] = triangles.array[baseIndex + 2];
-  }
+  const mapping = new Uint16Array(buffer.getMappedRange(0, dataSize));
+  mapping.set(triangles.array);
   buffer.unmap();
   return buffer;
 };
