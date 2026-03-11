@@ -31,6 +31,7 @@ export let UI = {
     direction: new THREE.Vector3(0.5, -0.5, 0.5),
     biasType: 0,
     biasValue: 0.001,
+    lightAmbient: 0.7,
 };
 // dirty flags
 export let UIchanged = {
@@ -53,7 +54,8 @@ export function changeConfig(gpu: webGPUData, buffers: ConfigBuffers) : boolean 
         UI.biasType, 
         UI.biasValue,
         UI.lightOn,
-        UI.cascadeLayers
+        UI.cascadeLayers,
+        UI.lightAmbient
     );
     return true;
 }

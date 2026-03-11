@@ -27,6 +27,7 @@ export function initUInteractions(): void {
 
     (document.getElementById('lightOn') as HTMLInputElement).checked = UI.lightOn;
     (document.getElementById('cascadeLayers') as HTMLInputElement).checked = UI.cascadeLayers;
+    (document.getElementById('lightAmbient') as HTMLInputElement).value = UI.lightAmbient.toString();
 
     hideDivElementById(UI.shadowMap, "depthMapSettings");
     let htmlElement = document.getElementById('depthCascade') as HTMLInputElement;
@@ -55,17 +56,24 @@ export function initUInteractions(): void {
         UIchanged.configChanged = true;
     });
 
-    // change shadow map on/off
+    // change if cascade layers colors are showing
     document.getElementById('cascadeLayers')?.addEventListener('change', () => {
         const shadowMapCheckbox = document.getElementById('cascadeLayers') as HTMLInputElement;
         UI.cascadeLayers = shadowMapCheckbox.checked;
         UIchanged.configChanged = true;
     });
 
-    // change shadow map on/off
+    // change if light is on
     document.getElementById('lightOn')?.addEventListener('change', () => {
         const shadowMapCheckbox = document.getElementById('lightOn') as HTMLInputElement;
         UI.lightOn = shadowMapCheckbox.checked;
+        UIchanged.configChanged = true;
+    });
+
+    // get light ambient
+    document.getElementById('lightAmbient')?.addEventListener('change', () => {
+        const shadowMapCheckbox = document.getElementById('lightAmbient') as HTMLInputElement;
+        UI.lightAmbient = shadowMapCheckbox.valueAsNumber;
         UIchanged.configChanged = true;
     });
 

@@ -54,6 +54,12 @@
         <br/>
         Direction z:
         <input id="dirz" type="range" min="-1" max="1" step="0.01"/>
+        Phong Light:
+        <input id="lightOn" type="checkbox"/>
+        <br/>
+        Light Ambient:
+        <input id="lightAmbient" type="number" min="0" max="1.0" step="0.05"/>
+        <br/>
       </div>
     </details>
     <details>
@@ -62,9 +68,6 @@
         <div class="group"></div>
         Shadow Map:
         <input id="shadowMapOn" type="checkbox"/>
-        <br/>
-        Phong Light:
-        <input id="lightOn" type="checkbox"/>
         <br/>
         Number of Samples Under Root: 
         <input id="numberOfSamples" type="number" min="0" max="20" step="2"/>

@@ -16,7 +16,8 @@ struct Config {
     biasType: u32,
     lightOn: u32,
     cascadeLayers: u32,
-    biasValue: f32
+    biasValue: f32,
+    lightAmbient: f32
 };
 
 
@@ -32,9 +33,6 @@ struct FragmentIn {
 @group(1) @binding(0) var<uniform> light: LightUniforms;
 @group(1) @binding(1) var<uniform> lightOptions: LightOptionsUniforms;
 @group(1) @binding(2) var<uniform> config: Config;
-
-const albedo = vec3f(0.7);
-const ambientFactor = 0.5;
 
 // colors for cascade
 const colors: array<vec3f, MAX_CASCADES> = array<vec3f, MAX_CASCADES>(
@@ -155,7 +153,7 @@ fn main(in: FragmentIn) -> @location(0) vec4f {
 
     // if need phong light
     if(config.lightOn == 1) {
-        lighting = (ambientFactor + (shadow * albedo) * (diffuse + 0.0)) * color;
+        lighting = (config.lightAmbient + shadow * (diffuse + 0.0)) * color;
     } else {
         lighting = shadow * color;
     }

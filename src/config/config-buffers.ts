@@ -8,7 +8,7 @@ export type ConfigBuffers = {
 export function createConfigBuffers(
     gpu: webGPUData
 ) : ConfigBuffers {
-    const configBufferSize = 6 * Uint32Array.BYTES_PER_ELEMENT + 1 * Float32Array.BYTES_PER_ELEMENT;
+    const configBufferSize = 6 * Uint32Array.BYTES_PER_ELEMENT + 2 * Float32Array.BYTES_PER_ELEMENT;
 
     const configBuffer = gpu.device.createBuffer({
         size: configBufferSize,
@@ -31,6 +31,7 @@ export function fillConfigBuffers(
     biasValue: number,
     lightOn: boolean,
     cascadeLayers: boolean,
+    lightAmbient: number
 ) : ConfigBuffers {
     const { configBuffer } = buffers;
     
@@ -45,6 +46,7 @@ export function fillConfigBuffers(
     uint32View[4] = lightOn ? 1 : 0;
     uint32View[5] = cascadeLayers ? 1 : 0;
     float32View[6] = biasValue;
+    float32View[7] = lightAmbient;
     
     gpu.device.queue.writeBuffer(configBuffer, 0, dataArray);
     
