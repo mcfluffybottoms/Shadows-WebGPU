@@ -22,18 +22,17 @@ export function initUInteractions(): void {
     (document.getElementById('diry') as HTMLSelectElement).value = UI.direction.y.toString();
     (document.getElementById('dirz') as HTMLSelectElement).value = UI.direction.z.toString();
 
+    (document.getElementById('biasType') as HTMLSelectElement).value = UI.biasType.toString();
+    (document.getElementById('biasValue') as HTMLSelectElement).value = UI.biasValue.toString();
+
+    (document.getElementById('lightOn') as HTMLInputElement).checked = UI.lightOn;
+    (document.getElementById('cascadeLayers') as HTMLInputElement).checked = UI.cascadeLayers;
+
     hideDivElementById(UI.shadowMap, "depthMapSettings");
     let htmlElement = document.getElementById('depthCascade') as HTMLInputElement;
     htmlElement.max = UI.numOfCascades.toString();
     htmlElement.value = "1";
     UI.depthMapCascade = 1;
-
-    // change controls
-    document.getElementById('changePos')?.addEventListener('change', () => {
-        const controlsSelect = document.getElementById('changePos') as HTMLSelectElement;
-        UI.controllingWhat = controlsSelect.value == "0" ? controllingWhat.camera : controllingWhat.light;
-        UIchanged.controllingWhat = true;
-    });
 
     // change view - render depth pass or shadow maps
     document.getElementById('render')?.addEventListener('change', () => {
@@ -53,6 +52,20 @@ export function initUInteractions(): void {
     document.getElementById('shadowMapOn')?.addEventListener('change', () => {
         const shadowMapCheckbox = document.getElementById('shadowMapOn') as HTMLInputElement;
         UI.shadowMap = shadowMapCheckbox.checked;
+        UIchanged.configChanged = true;
+    });
+
+    // change shadow map on/off
+    document.getElementById('cascadeLayers')?.addEventListener('change', () => {
+        const shadowMapCheckbox = document.getElementById('cascadeLayers') as HTMLInputElement;
+        UI.cascadeLayers = shadowMapCheckbox.checked;
+        UIchanged.configChanged = true;
+    });
+
+    // change shadow map on/off
+    document.getElementById('lightOn')?.addEventListener('change', () => {
+        const shadowMapCheckbox = document.getElementById('lightOn') as HTMLInputElement;
+        UI.lightOn = shadowMapCheckbox.checked;
         UIchanged.configChanged = true;
     });
 
@@ -105,6 +118,18 @@ export function initUInteractions(): void {
         const sizeInput = document.getElementById('dirz') as HTMLInputElement;
         UI.direction.z = sizeInput.valueAsNumber;
         UIchanged.directionChanged = true;
+    });
+
+    // bias
+    document.getElementById('biasType')?.addEventListener('change', () => {
+        const sizeInput = document.getElementById('biasType') as HTMLInputElement;
+        UI.biasType = sizeInput.valueAsNumber;
+        UIchanged.configChanged = true;
+    });
+    document.getElementById('biasValue')?.addEventListener('change', () => {
+        const sizeInput = document.getElementById('biasValue') as HTMLInputElement;
+        UI.biasValue = sizeInput.valueAsNumber;
+        UIchanged.configChanged = true;
     });
 
 }

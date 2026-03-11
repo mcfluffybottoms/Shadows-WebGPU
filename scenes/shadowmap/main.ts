@@ -5,7 +5,7 @@ import {
   loadAndAddObject,
 } from "../../src/utils/loader";
 import { getWebGPU } from "../../src/utils/webgpu-data";
-import { DirectionalLight, getFrustumCorners } from "../../src/scene/light-types";
+import { DirectionalLight } from "../../src/scene/light-types";
 import { initRenderDepthPass, renderDepthPass } from "../../src/passes/depthMapDebug";
 import { depthPass, getDepthMap, initDepthPass } from "../../src/passes/depthPass";
 import { initShadowPass, shadowPass } from "../../src/passes/shadowPass";
@@ -51,9 +51,7 @@ initUInteractions();
 
 function updateCamera(scene: Scene) {
   if (UIchanged.cameraWhat) {
-    if (UI.controllingWhat == controllingWhat.camera) {
-      mainControls.disconnect();
-    }
+    mainControls.disconnect();
     if (UI.cameraWhat == cameraWhat.Orthographic) {
       mainCamera = orthoCamera;
       mainControls = orthoControls;

@@ -11,7 +11,7 @@ export type SceneBuffers = {
 };
 
 const OFFSET = 64 * Float32Array.BYTES_PER_ELEMENT;
-const MAX_CASCADES = 16;
+const MAX_CASCADES = 8;
 
 export function createSceneBuffers(
     gpu: webGPUData,

@@ -20,14 +20,17 @@ export enum cameraWhat {
 // global data config to store changes to UI
 export let UI = {
     renderWhat: renderWhat.scene,
-    controllingWhat: controllingWhat.camera,
     cameraWhat: cameraWhat.Perspective,
     shadowMap: true,
+    lightOn: true,
+    cascadeLayers: true,
     numberOfSamples: 4,
     depthPassSize: 1024,
     numOfCascades: 4,
     depthMapCascade: 1,
-    direction: new THREE.Vector3(1, 0.5, 1),
+    direction: new THREE.Vector3(0.5, -0.5, 0.5),
+    biasType: 0,
+    biasValue: 0.001,
 };
 // dirty flags
 export let UIchanged = {
@@ -36,11 +39,21 @@ export let UIchanged = {
     configChanged: true,
     depthPassSizeChanged: false,
     numOfCascadesChanged: false,
-    directionChanged: false,
+    directionChanged: true,
 };
 
 export function changeConfig(gpu: webGPUData, buffers: ConfigBuffers) : boolean {
     if(!UIchanged.configChanged) return false;
-    fillConfigBuffers(gpu, buffers, UI.shadowMap, UI.numberOfSamples, UI.numOfCascades);
+    fillConfigBuffers(
+        gpu, 
+        buffers, 
+        UI.shadowMap, 
+        UI.numberOfSamples, 
+        UI.numOfCascades, 
+        UI.biasType, 
+        UI.biasValue,
+        UI.lightOn,
+        UI.cascadeLayers
+    );
     return true;
 }

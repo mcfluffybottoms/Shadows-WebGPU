@@ -53,7 +53,7 @@ export async function initDepthPass(
             depthWriteEnabled: true,
             depthCompare: "less",
         }, 
-        primitive: { topology: 'triangle-list', cullMode: 'back' },
+        primitive: { topology: 'triangle-list', cullMode: 'front' },
         layout: "auto",
     });
 

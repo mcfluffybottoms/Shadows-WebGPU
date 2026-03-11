@@ -9,7 +9,7 @@ import { Scene } from "../scene/scene-types";
 import { SceneBuffers } from "../scene/scene-buffers";
 import { ConfigBuffers } from "../config/config-buffers";
 
-const MAX_CASCADES = 16;
+const MAX_CASCADES = 8;
 
 export type shadowPassResources = {
     pipeline: GPURenderPipeline;
@@ -60,7 +60,7 @@ export async function initShadowPass(
         entries: [
             {
                 binding: 0,
-                resource: { buffer: snatchedLightBuffer, offset: 0, size: Float32Array.BYTES_PER_ELEMENT * 16 * 16 }
+                resource: { buffer: snatchedLightBuffer, offset: 0, size: Float32Array.BYTES_PER_ELEMENT * 16 * MAX_CASCADES }
             },
             {
                 binding: 1,

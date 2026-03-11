@@ -37,7 +37,7 @@
 
         <div id="depthMapSettings">
           Show Depth Cascade:
-          <input id="depthCascade" type="number" min="1" max="16" step="1"/>
+          <input id="depthCascade" type="number" min="1" max="8" step="1"/>
           <br/>
         </div>
       </div>
@@ -47,13 +47,13 @@
       <div class="settings-block">
         <div class="group"></div>
         Direction x:
-        <input id="dirx" type="range" min="0.1" max="1" step="0.01"/>
+        <input id="dirx" type="range" min="-1" max="1" step="0.01"/>
         <br/>
         Direction y:
-        <input id="diry" type="range" min="0.1" max="1" step="0.01"/>
+        <input id="diry" type="range" min="-1" max="1" step="0.01"/>
         <br/>
         Direction z:
-        <input id="dirz" type="range" min="-1" max="-0.1" step="0.01"/>
+        <input id="dirz" type="range" min="-1" max="1" step="0.01"/>
       </div>
     </details>
     <details>
@@ -63,14 +63,30 @@
         Shadow Map:
         <input id="shadowMapOn" type="checkbox"/>
         <br/>
+        Phong Light:
+        <input id="lightOn" type="checkbox"/>
+        <br/>
         Number of Samples Under Root: 
         <input id="numberOfSamples" type="number" min="0" max="20" step="2"/>
         <br/>
         Number of Cascades: 
-        <input id="numberOfCascades" type="number" min="1" max="16" step="1"/>
+        <input id="numberOfCascades" type="number" min="1" max="8" step="1"/>
+        <br/>
+        Cascades In Color:
+        <input id="cascadeLayers" type="checkbox"/>
         <br/>
         Depth Pass Size: 
         <input id="depthPassSize" type="number" min="0" max="16384"/>
+        <br/>
+        Bias Type: 
+        <select id="biasType" data-default="0">
+          <option value="0" selected>Slope</option>
+          <option value="1">Normal</option>
+          <option value="2">Custom</option>
+        </select>
+        <br/>
+        Bias Value: 
+        <input id="biasValue" type="number" min="0" max="0.1"  step="0.0001"/>
       </div>
     </details>
     

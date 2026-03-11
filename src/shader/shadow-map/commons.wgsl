@@ -1,4 +1,4 @@
-const MAX_CASCADES = 16;
+const MAX_CASCADES = 8;
 
 // objects data
 struct Vertex {
@@ -26,9 +26,14 @@ struct LightOptionsUniforms {
 // configuration
 struct Config {
     shadowMapOn: u32,
-    numberOfSamples: u32,
-    numOfCascades: u32
+    samplesPerSide: u32,
+    numOfCascades: u32,
+    biasType: u32,
+    lightOn: u32,
+    cascadeLayers: u32,
+    biasValue: f32
 };
+
 
 // cameras
 struct CameraUniforms {

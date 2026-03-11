@@ -1,4 +1,4 @@
-const MAX_CASCADES = 16;
+const MAX_CASCADES = 8;
 
 struct LightUniforms {
     viewProjMatrix: array<mat4x4<f32>, MAX_CASCADES>,
@@ -22,16 +22,18 @@ struct Vertex {
     @location(1) normal: vec3<f32>,
 };
 struct VertexOut {
-    @location(0) fragPosLightSpace: vec4<f32>,
-    @location(1) fragPos: vec3<f32>,
+    @location(1) fragPos: vec4<f32>,
     @location(2) fragNorm: vec3<f32>,
-    @location(3) @interpolate(flat) cascadeId: u32,
     @builtin(position) Position: vec4f,
 };
 struct Config {
     shadowMapOn: u32,
     samplesPerSide: u32,
-    numOfCascades: u32
+    numOfCascades: u32,
+    biasType: u32,
+    lightOn: u32,
+    cascadeLayers: u32,
+    biasValue: f32
 };
 
 @group(0) @binding(0) var<uniform> camera: CameraUniforms;
@@ -40,38 +42,15 @@ struct Config {
 @group(1) @binding(1) var<uniform> lightOptions: LightOptionsUniforms;
 @group(1) @binding(2) var<uniform> config: Config;
 
-fn getCascadeId(depth: f32) -> u32 {
-    let numOfCascades = i32(config.numOfCascades);
-    for (var i = 0; i < numOfCascades; i++) {
-        if (depth <= lightOptions.splits[i].y) {
-            return u32(i);
-        }
-    }
-    return u32(numOfCascades - 1);
-}
-
 @vertex
 fn main(v: Vertex) -> VertexOut {
     let worldPos = object.modelMatrix * vec4f(v.position, 1.0);
 
-    // select based on view
-    let viewPos = camera.viewMatrix * worldPos;
-    let depth = viewPos.z * 0.5 + 0.5; 
-    var cascadeId = getCascadeId(depth);
-    //var cascadeId = 3u;
-
-    let posi = camera.viewProjMatrix * worldPos;
-    let lightPos = light.viewProjMatrix[cascadeId] * worldPos;
-    
-    let posFromLight = lightPos;
-    
+    // to output
     var output: VertexOut;
-    output.fragPosLightSpace = lightPos;
-    output.Position = posi;
-    output.fragPos = worldPos.xyz;
+    output.Position = camera.viewProjMatrix * worldPos;
+    output.fragPos = worldPos;
     output.fragNorm = (object.normalMatrix * vec4f(v.normal, 0.0)).xyz;
-
-    output.cascadeId = cascadeId;
     
     return output;
 }
