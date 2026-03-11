@@ -22,7 +22,6 @@ export function initUInteractions(): void {
     (document.getElementById('diry') as HTMLSelectElement).value = UI.direction.y.toString();
     (document.getElementById('dirz') as HTMLSelectElement).value = UI.direction.z.toString();
 
-    (document.getElementById('biasType') as HTMLSelectElement).value = UI.biasType.toString();
     (document.getElementById('biasValue') as HTMLSelectElement).value = UI.biasValue.toString();
 
     (document.getElementById('lightOn') as HTMLInputElement).checked = UI.lightOn;
@@ -129,12 +128,6 @@ export function initUInteractions(): void {
     });
 
     // bias
-    document.getElementById('biasType')?.addEventListener('change', () => {
-        const sizeInput = document.getElementById('biasType') as HTMLInputElement;
-        UI.biasType = sizeInput.valueAsNumber;
-        console.log(UI.biasType);
-        UIchanged.configChanged = true;
-    });
     document.getElementById('biasValue')?.addEventListener('change', () => {
         const sizeInput = document.getElementById('biasValue') as HTMLInputElement;
         UI.biasValue = sizeInput.valueAsNumber;
@@ -152,7 +145,7 @@ export function changeFPS(fps: number) {
     fpsElement.textContent = "FPS: " + fps.toString();
 }
 
-export function changeMPF(minMpf: number, avgMpf: number, maxMpf: number) {
+export function changeMPF(avgMpf: number) {
     var mpfElement = document.getElementById('mpf-counter');
     if (!mpfElement) {
         console.warn('MPF counter element not found');

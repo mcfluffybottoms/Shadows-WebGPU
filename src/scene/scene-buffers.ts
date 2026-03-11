@@ -1,3 +1,4 @@
+import * as THREE from "three/webgpu";
 import { Scene } from "./scene-types";
 import { getVP } from "../utils/camera-utils";
 import { webGPUData } from "../utils/webgpu-data";
@@ -15,7 +16,7 @@ const MAX_CASCADES = 8;
 
 export function createSceneBuffers(
     gpu: webGPUData,
-    scene: Scene,
+    scene: Scene
 ) : SceneBuffers {
     const { entities } = scene;
 
@@ -64,11 +65,12 @@ export function fillSceneBuffers(
     gpu: webGPUData,
     buffers: SceneBuffers,
     scene: Scene,
+    camera: THREE.OrthographicCamera | THREE.PerspectiveCamera,
     numOfCascades: number, 
     flags: bufferToFill
 ) : SceneBuffers {
     const { cameraBuffer, lightBuffer, snatchedLightBuffer, objectBuffer, lightBufferOptions } = buffers;
-    const { light, entities, camera } = scene;
+    const { light, entities } = scene;
 
     // camera buffer
     if(flags.camera) {

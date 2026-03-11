@@ -18,5 +18,4 @@ export type Entity = {
 export type Scene = {
   entities: Entity[];
   light: DirectionalLight;
-  camera: THREE.Camera;
 };

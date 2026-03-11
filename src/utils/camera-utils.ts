@@ -10,6 +10,11 @@ export enum CameraType {
     Perspective
 }
 
+export type CameraConfig = {
+  camera: THREE.OrthographicCamera | THREE.PerspectiveCamera;
+  controls: OrbitControls
+}
+
 export function addCamera(canvas: HTMLCanvasElement, type: CameraType): THREE.OrthographicCamera | THREE.PerspectiveCamera {
     var camera;
     const aspect = canvas.width / canvas.height;
@@ -35,6 +40,17 @@ export function addCamera(canvas: HTMLCanvasElement, type: CameraType): THREE.Or
     camera.position.set(17.733736277643853, 1.8645731021897773, -11.723682572752207);
     camera.rotation.set(-2.907098534188704, 0.862378271482270, 2.9621339797774384);
     return camera
+}
+
+// ------ view-projection matrix ------ //
+export function setControls(canvas: HTMLCanvasElement, camera: THREE.Camera) {
+  const controls = new OrbitControls(camera, canvas);
+  controls.target.set(0, 0, 0);
+  controls.enableRotate = true;
+  controls.enableZoom = true;
+  controls.enablePan = true;
+  controls.update();
+  return controls;
 }
 
 // ------ view-projection matrix ------ //

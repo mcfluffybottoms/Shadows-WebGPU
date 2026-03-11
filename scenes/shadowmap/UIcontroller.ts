@@ -29,7 +29,7 @@ export let UI = {
     numOfCascades: 4,
     depthMapCascade: 1,
     direction: new THREE.Vector3(0.5, -0.5, 0.5),
-    biasType: 0,
+    biasType: 2,
     biasValue: 0.001,
     lightAmbient: 0.3,
 };

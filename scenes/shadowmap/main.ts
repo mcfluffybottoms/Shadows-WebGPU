@@ -4,54 +4,42 @@ import {
   getModelBuffers,
   loadAndAddObject,
 } from "../../src/utils/loader";
-import { getWebGPU } from "../../src/utils/webgpu-data";
+import { getWebGPU, webGPUData } from "../../src/utils/webgpu-data";
 import { DirectionalLight } from "../../src/scene/light-types";
-import { initRenderDepthPass, renderDepthPass } from "../../src/passes/depthMapDebug";
-import { depthPass, getDepthMap, initDepthPass } from "../../src/passes/depthPass";
-import { initShadowPass, shadowPass } from "../../src/passes/shadowPass";
-import { createSceneBuffers, fillSceneBuffers } from "../../src/scene/scene-buffers";
-import { addCamera, CameraType } from "../../src/utils/camera-utils";
+import { initRenderDepthPass, renderDepthPass, renderDepthPassResources } from "../../src/passes/depthMapDebug";
+import { depthMap, depthPass, depthPassResources, getDepthMap, initDepthPass } from "../../src/passes/depthPass";
+import { initShadowPass, shadowPass, shadowPassResources } from "../../src/passes/shadowPass";
+import { createSceneBuffers, fillSceneBuffers, SceneBuffers } from "../../src/scene/scene-buffers";
+import { addCamera, CameraConfig, CameraType, setControls } from "../../src/utils/camera-utils";
 import { OrbitControls } from "three/examples/jsm/Addons.js";
 import { cameraWhat, changeConfig, controllingWhat, renderWhat, UI, UIchanged } from "./UIcontroller";
 import { changeFPS, changeMPF, initUInteractions } from "./UI";
 import { Scene } from "../../src/scene/scene-types";
-import { createConfigBuffers } from "../../src/config/config-buffers";
+import { ConfigBuffers, createConfigBuffers } from "../../src/config/config-buffers";
+import { Stats } from "../../src/utils/stats";
 
 
-function initScene() {}
-// ---- get webgpu data ---- //
-const gpu = await getWebGPU();
-
-// camera
-export type cameraConfig = {
-  camera: THREE.Camera;
-  controls: OrbitControls
+export type RenderInfo = {
+  gpu: webGPUData,
+  orthoConfig: CameraConfig,
+  perspectiveConfig: CameraConfig,
+  mainConfig: CameraConfig,
+  scene: Scene,
+  sceneBuffers: SceneBuffers,
+  configBuffers: ConfigBuffers,
+  depthMap: depthMap,
+  depthPassResources: depthPassResources,
+  shadowPassResources: shadowPassResources,
+  renderDepthPassResources: renderDepthPassResources,
 }
-function setControls(camera: THREE.Camera) {
-  const controls = new OrbitControls(camera, gpu.canvas);
-  controls.target.set(0, 0, 0);
-  controls.enableRotate = true;
-  controls.enableZoom = true;
-  controls.enablePan = true;
-  controls.update();
-  return controls;
-}
-let orthoCamera = addCamera(gpu.canvas, CameraType.Orthographic);
-let orthoControls = setControls(orthoCamera);
-let perspectiveCamera = addCamera(gpu.canvas, CameraType.Perspective);
-let perspectiveControls = setControls(perspectiveCamera);
 
-let mainCamera = perspectiveCamera;
-let mainControls = perspectiveControls;
-
-// light source
-const light = new DirectionalLight(mainCamera, UI.numOfCascades);
-
-// ------ SETUP UI ------ //
-
-initUInteractions();
-
-function updateCamera(scene: Scene) {
+function updateCamera(
+  canvas: HTMLCanvasElement,
+  renderInfo: RenderInfo
+) {
+  let {camera: orthoCamera, controls: orthoControls} = renderInfo.orthoConfig;
+  let {camera: perspectiveCamera, controls: perspectiveControls} = renderInfo.perspectiveConfig;
+  let {camera: mainCamera, controls: mainControls} = renderInfo.mainConfig;
   if (UIchanged.cameraWhat) {
     mainControls.disconnect();
     if (UI.cameraWhat == cameraWhat.Orthographic) {
@@ -61,64 +49,112 @@ function updateCamera(scene: Scene) {
       mainCamera = perspectiveCamera;
       mainControls = perspectiveControls;
     }
-    mainControls.connect(gpu.canvas);
-
-    scene.camera = mainCamera;
+    mainControls.connect(canvas);
     UIchanged.cameraWhat = false;
   }
 }
 
-// ------ INIT SCENE ------ //
-// ---- setup objects to display on scene ---- //
-const obj = await loadAndAddObject("/assets/with_mechet.glb");
-if (obj) {
-  obj.scale.setScalar(0.1);
-  obj.position.set(0, 0, 0);
-  obj.updateMatrixWorld(true);
-} else {
-  throw new Error("NO OBJ!");
+// ----- INIT ----- //
+function initExternal() {
+  initUInteractions();
 }
 
-let entities = getModelBuffers(gpu, obj);
-if (!entities) {
-  console.warn("Models were not loaded.");
-  entities = [];
+async function initRender(): Promise<RenderInfo> {
+  // ---- get webgpu data ---- //
+  const gpu = await getWebGPU();
+
+  // camera
+  let orthoCamera = addCamera(gpu.canvas, CameraType.Orthographic);
+  let orthoConfig = {
+    camera: orthoCamera,
+    controls: setControls(gpu.canvas, orthoCamera)
+  }
+  let perspectiveCamera = addCamera(gpu.canvas, CameraType.Perspective);
+  let perspectiveConfig = {
+    camera: perspectiveCamera,
+    controls: setControls(gpu.canvas, perspectiveCamera)
+  }
+
+  let mainConfig = perspectiveConfig;
+  
+  // light source
+  const light = new DirectionalLight(mainConfig.camera, UI.numOfCascades);
+
+  // ------ INIT SCENE ------ //
+  // ---- setup objects to display on scene ---- //
+  const obj = await loadAndAddObject("/assets/with_mechet.glb");
+  if (obj) {
+    obj.scale.setScalar(0.1);
+    obj.position.set(0, 0, 0);
+    obj.updateMatrixWorld(true);
+  } else {
+    throw new Error("NO OBJ!");
+  }
+  let entities = getModelBuffers(gpu, obj);
+  if (!entities) {
+    console.warn("Models were not loaded.");
+    entities = [];
+  }
+  const plane = createEntityFromGeometry(gpu, new THREE.BoxGeometry(50, 45, 1), { x: 50, y: 25, z: 25 });
+  plane.modelMatrix.makeRotationX(-Math.PI / 2);
+  entities.push(plane);
+
+  const scene = {
+    entities, light, camera: mainConfig.camera
+  };
+
+  // load scene buffer
+  const sceneBuffers = createSceneBuffers(gpu, scene);
+
+  // ------ init renderpass data ------ //
+  // config
+  const configBuffer = createConfigBuffers(gpu);
+  var depthMap = getDepthMap(gpu, UI.depthPassSize, UI.numOfCascades);
+  var depthPassResources = await initDepthPass(
+    gpu, 
+    scene, 
+    sceneBuffers.lightBuffer, 
+    sceneBuffers.objectBuffer, 
+    configBuffer, 
+    UI.numOfCascades
+  );
+  var shadowPassResources = await initShadowPass(
+    gpu, scene, 
+    depthMap, 
+    sceneBuffers, 
+    configBuffer, 
+    UI.numOfCascades
+  );
+  var renderDepthPassResources = await initRenderDepthPass(
+    gpu, 
+    depthMap, 
+    UI.depthMapCascade
+  );
+  fillSceneBuffers(
+    gpu, 
+    sceneBuffers, 
+    scene,
+    mainConfig.camera,
+    UI.numOfCascades, 
+    {camera: true, light: true, object: true}
+  );
+  return {
+      gpu: gpu,
+      orthoConfig: orthoConfig,
+      perspectiveConfig: perspectiveConfig,
+      mainConfig: mainConfig,
+      scene: scene,
+      sceneBuffers: sceneBuffers,
+      configBuffers: configBuffer,
+      depthMap: depthMap,
+      depthPassResources: depthPassResources,
+      shadowPassResources: shadowPassResources,
+      renderDepthPassResources: renderDepthPassResources,
+  }
 }
 
-const plane = createEntityFromGeometry(gpu, new THREE.BoxGeometry(50, 45, 1), { x: 50, y: 25, z: 25 });
-plane.modelMatrix.makeRotationX(-Math.PI / 2);
-entities.push(plane);
-
-// const cube = createEntityFromGeometry(gpu, new THREE.BoxGeometry(6, 6, 6), { x: 5, y: 3.1, z: -5 });
-// entities.push(cube);
-
-// const sphere = createEntityFromGeometry(gpu, new THREE.SphereGeometry(4), { x: 8, y: 4.1, z: 10 });
-// entities.push(sphere);
-
-// const cone = createEntityFromGeometry(gpu, new THREE.ConeGeometry(4, 10), { x: 0, y: 5.1, z: 10 });
-// entities.push(cone);
-
-// const dodecahedron = createEntityFromGeometry(gpu, new THREE.DodecahedronGeometry(3, 2), { x: -10, y: 4, z: -10 });
-// entities.push(dodecahedron);
-
-const scene = {
-  entities, light, camera: mainCamera
-};
-const buffers = createSceneBuffers(gpu, scene);
-
-// ------ INIT SCENE ------ //
-
-// ------ init renderpass data ------ //
-// config
-const configBuffer = createConfigBuffers(gpu);
-
-var depthMap = getDepthMap(gpu, UI.depthPassSize, UI.numOfCascades);
-var depthPassResources = await initDepthPass(gpu, scene, buffers.lightBuffer, buffers.objectBuffer, configBuffer, UI.numOfCascades);
-var shadowPassResources = await initShadowPass(gpu, scene, depthMap, buffers, configBuffer, UI.numOfCascades);
-var renderDepthPassResources = await initRenderDepthPass(gpu, depthMap, UI.depthMapCascade);
-fillSceneBuffers(gpu, buffers, scene, UI.numOfCascades, {camera: true, light: true, object: true});
-
-async function renderColor(encoder: GPUCommandEncoder) {
+async function renderColor(renderData: RenderInfo, encoder: GPUCommandEncoder) {
+  let {gpu, renderDepthPassResources, shadowPassResources, scene} = renderData;
   if (UI.renderWhat == renderWhat.depthMap) {
     await renderDepthPass(renderDepthPassResources, gpu, encoder);
   } else {
@@ -126,16 +162,17 @@ async function renderColor(encoder: GPUCommandEncoder) {
   }
 }
 
-async function updateSettings() {
+async function updateSettings(renderData: RenderInfo) {
+  let {gpu, depthMap, depthPassResources, renderDepthPassResources, shadowPassResources, sceneBuffers, configBuffers, scene} = renderData;
   if (UIchanged.depthPassSizeChanged || UIchanged.configChanged) {
     depthMap = getDepthMap(gpu, UI.depthPassSize, UI.numOfCascades);
-    depthPassResources = await initDepthPass(gpu, scene, buffers.lightBuffer, buffers.objectBuffer, configBuffer, UI.numOfCascades);
-    shadowPassResources = await initShadowPass(gpu, scene, depthMap, buffers, configBuffer, UI.numOfCascades);
+    depthPassResources = await initDepthPass(gpu, scene, sceneBuffers.lightBuffer, sceneBuffers.objectBuffer, configBuffers, UI.numOfCascades);
+    shadowPassResources = await initShadowPass(gpu, scene, depthMap, sceneBuffers, configBuffers, UI.numOfCascades);
     renderDepthPassResources = await initRenderDepthPass(gpu, depthMap, UI.depthMapCascade);
     UIchanged.depthPassSizeChanged = false;
   }
-  changeConfig(gpu, configBuffer);
-  updateCamera(scene);
+  changeConfig(gpu, configBuffers);
+  updateCamera(gpu.canvas, renderData);
 }
 
 function changeDirection(light: DirectionalLight) : boolean {
@@ -145,59 +182,72 @@ function changeDirection(light: DirectionalLight) : boolean {
 }
 
 // ------ MAIN LOOP ------ //
-let lastTime = performance.now();
-let frameCount = 0;
-let fps = 0;
-let mpf = 0;
-let mpfHistory: number[] = [];
 
-gpu.device.lost.then((info) => {
-  console.error(`WebGPU device was lost: ${info.message}`);
-});
+// statistics
+let stats = new Stats();
+
+// get render data
+initExternal();
+let renderData = await initRender();
+
+// if device lost
+var deviceLost = false;
+async function handleDeviceLost(device: GPUDevice) {
+  const info = await device.lost;
+  console.error(`WebGPU device lost: ${info.message}`, info);
+  deviceLost = true;
+  if (info.reason !== "destroyed") {
+    //destroy(renderData);
+    renderData = await initRender();
+    deviceLost = false;
+    handleDeviceLost(renderData.gpu.device);
+  }
+}
+handleDeviceLost(renderData.gpu.device);
 
 async function animate() {
-  //if lost device - try to reconnect
-
-  await updateSettings();
-  if(UIchanged.directionChanged) changeDirection(light);
-  light.update(mainCamera, UI.numOfCascades, UI.depthPassSize);
+  // if(deviceLost) {
+  //   requestAnimationFrame(animate);
+  //   return;
+  // }
   
+  // get data
+  let {
+    gpu, 
+    depthMap, 
+    depthPassResources, 
+    sceneBuffers, 
+    scene
+  } = renderData;
+  const camera = renderData.mainConfig.camera;
 
-  const frameStart = performance.now();
+  // update settings
+  await updateSettings(renderData);
+  if(UIchanged.directionChanged) changeDirection(renderData.scene.light);
+  renderData.scene.light.update(camera, UI.numOfCascades, UI.depthPassSize);
 
+  // start profiling
+  stats.start();
+
+  // run render pipeline
   const encoder = gpu.device.createCommandEncoder();
-
-  fillSceneBuffers(gpu, buffers, scene, UI.numOfCascades, {camera: true, light: true, object: false});
-
+  fillSceneBuffers(gpu, sceneBuffers, scene, camera, UI.numOfCascades, {camera: true, light: true, object: false});
   await depthPass(depthMap, depthPassResources, gpu, encoder, scene, UI.numOfCascades);
-  await renderColor(encoder);
-  gpu.device.queue.submit([encoder.finish()]);
+  await renderColor(renderData, encoder);
 
-  const frameEnd = performance.now();
-
-  // ------ PROFILING ------ //
-  mpf = frameEnd - frameStart;
-  mpfHistory.push(mpf);
-  if (mpfHistory.length > 60) mpfHistory.shift();
-
-  frameCount++;
-  const currentTime = performance.now();
-  const elapsed = currentTime - lastTime;
-  if (elapsed >= 1000) {
-    // FPS
-    fps = Math.round((frameCount * 1000) / elapsed);
-    frameCount = 0;
-    lastTime = currentTime;
-    changeFPS(fps);
-    // MPF
-    const avgMpf = mpfHistory.reduce((sum, val) => sum + val, 0) / mpfHistory.length;
-    const maxMpf = Math.max(...mpfHistory);
-    const minMpf = Math.min(...mpfHistory);
-    mpfHistory = [];
-    changeMPF(minMpf, avgMpf, maxMpf);
+  try {
+    gpu.device.queue.submit([encoder.finish()]);
+  } catch(e) {
+    console.error("Queue submit error: ", e);
   }
 
-
+  // ------ PROFILING ------ //
+  let elapsed = stats.end();
+  if(elapsed) {
+    changeFPS(stats.fps);
+    changeMPF(stats.avgMpf);
+  }
+  
   requestAnimationFrame(animate);
 }
 

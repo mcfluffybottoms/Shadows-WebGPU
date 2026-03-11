@@ -5,7 +5,6 @@ export type webGPUData = {
   context: GPUCanvasContext;
 };
 
-
 export async function getWebGPU(): Promise<webGPUData> {
   const canvas = document.querySelector('canvas') as HTMLCanvasElement;
   const adapter = await navigator.gpu?.requestAdapter({
