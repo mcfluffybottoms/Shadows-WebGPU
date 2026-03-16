@@ -43,6 +43,7 @@ export async function initDepthPass(
     // get uniform values for depth map render pipeline
     const { entities } = scene;
     const pipeline = gpu.device.createRenderPipeline({
+        label: "DepthPass",
         vertex: {
             module: gpu.device.createShaderModule({ code: depthMapVertex }),
             entryPoint: 'main',
@@ -138,11 +139,11 @@ export async function depthPass(
 
         //depthPass.setViewport(0, 0, d.depthTextureSize, d.depthTextureSize, 0, 1);
         depthPass.setPipeline(pipeline);
+        depthPass.setBindGroup(1, lightGroup);
         for (let j = 0; j < entities.length; ++j) {
             const { mesh } = entities[j];
             const group = entityBindGroups[j];
             depthPass.setBindGroup(0, group);
-            depthPass.setBindGroup(1, lightGroup);
 
             depthPass.setVertexBuffer(0, mesh.vertexBuffer);
             if (mesh.indexBuffer) {

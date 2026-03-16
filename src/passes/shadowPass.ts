@@ -31,6 +31,7 @@ export async function initShadowPass(
     const { cameraBuffer, snatchedLightBuffer, lightBufferOptions, objectBuffer } = buffers;
     const { configBuffer, configBufferSize } = configBuffers;
     const pipeline = gpu.device.createRenderPipeline({
+        label: "ShadowPass",
         vertex: {
             module: gpu.device.createShaderModule({ code: shadowMapVertex }),
             entryPoint: 'main',

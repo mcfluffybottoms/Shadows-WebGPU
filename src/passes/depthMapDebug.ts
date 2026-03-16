@@ -17,6 +17,7 @@ export async function initRenderDepthPass(
     const { depthTexture } = d;
 
     const pipeline = gpu.device.createRenderPipeline({
+        label: "RenderDepthPass",
         vertex: {
             module: gpu.device.createShaderModule({ code: debugDepthVertex }),
             entryPoint: 'main'

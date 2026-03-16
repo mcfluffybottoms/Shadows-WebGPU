@@ -257,9 +257,6 @@ async function animate() {
   //   return;
   // }
 
-  // get data
-  let camera = renderData.mainConfig.camera;
-
   // update settings
   updateData(renderData);
 
