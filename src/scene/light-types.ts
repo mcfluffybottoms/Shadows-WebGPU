@@ -1,9 +1,6 @@
 import * as THREE from "three/webgpu";
-import { webGPUData } from "../utils/webgpu-data";
-import { OrbitControls } from "three/examples/jsm/Addons.js";
-import { bool } from "three/tsl";
-import { changeProjectionMatrix, getInverseVP, getProjMatrix, getVP, getVPraw } from "../utils/camera-utils";
-import { DEG2RAD } from "three/src/math/MathUtils.js";
+
+import { getProjMatrix, getVPraw } from "../utils/camera-utils";
 
 export interface LightSource {
     projMatrix: THREE.Matrix4;

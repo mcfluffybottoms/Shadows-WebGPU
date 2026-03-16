@@ -1,10 +1,8 @@
-import { LightSource } from "../scene/light-types";
 import { webGPUData } from "../utils/webgpu-data";
 import { depthMap } from "./depthPass";
 
 import debugDepthVertex from '../shader/shadow-map/debug-depth-map.wgsl?raw';
 import debugDepthFragment from '../shader/shadow-map/debug-depth-map-frag.wgsl?raw';
-import { UI } from "../../scenes/shadowmap/UIcontroller";
 
 export type renderDepthPassResources = {
     pipeline: GPURenderPipeline;

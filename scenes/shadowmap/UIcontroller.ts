@@ -1,9 +1,5 @@
 import * as THREE from "three/webgpu";
 
-import { OrbitControls } from "three/examples/jsm/Addons.js";
-import { ConfigBuffers, fillConfigBuffers } from "../../src/config/config-buffers";
-import { webGPUData } from "../../src/utils/webgpu-data";
-
 export enum renderWhat {
     depthMap,
     scene
@@ -19,43 +15,60 @@ export enum cameraWhat {
 
 // global data config to store changes to UI
 export let UI = {
+    // change view
     renderWhat: renderWhat.scene,
-    cameraWhat: cameraWhat.Perspective,
-    shadowMap: true,
-    lightOn: true,
-    cascadeLayers: true,
-    numberOfSamples: 4,
+    //camera
+    cameraType: cameraWhat.Perspective,
+    //light buffer
+    direction: new THREE.Vector3(0.5, -0.5, 0.5),
+    //reinit
     depthPassSize: 1024,
     numOfCascades: 4,
+    //debug depthmap and shadows
     depthMapCascade: 1,
-    direction: new THREE.Vector3(0.5, -0.5, 0.5),
-    biasType: 2,
-    biasValue: 0.001,
+    cascadeLayers: true,
+    //light
+    lightOn: true,
     lightAmbient: 0.3,
-};
-// dirty flags
-export let UIchanged = {
-    controllingWhat: true,
-    cameraWhat: true,
-    configChanged: true,
-    depthPassSizeChanged: false,
-    numOfCascadesChanged: false,
-    directionChanged: true,
+    //shadows
+    shadowMap: true,
+    numberOfSamples: 4,
+    biasType: 2,
+    biasValue: 0.003,
 };
 
-export function changeConfig(gpu: webGPUData, buffers: ConfigBuffers) : boolean {
-    if(!UIchanged.configChanged) return false;
-    fillConfigBuffers(
-        gpu, 
-        buffers, 
-        UI.shadowMap, 
-        UI.numberOfSamples, 
-        UI.numOfCascades, 
-        UI.biasType, 
-        UI.biasValue,
-        UI.lightOn,
-        UI.cascadeLayers,
-        UI.lightAmbient
-    );
-    return true;
+// dirty flags for reinit
+export let UIChangedToReinit = {
+    depthPassSize: true,
+    numOfCascades: true,
+    depthMapCascade: true,
+};
+
+// dirty flags for light
+export let UILightBufferChanged = {
+    direction: true,
+};
+
+// dirty flags for camera
+export let UICameraBufferChanged = {
+    cameraType: true,
+};
+
+export let UIConfigChanged = {
+    configChanged: true
+};
+
+// reset flags to  true
+export function resetFlags(UIChanged: any) {
+    const keys = Object.keys(UIChanged);
+    keys.forEach(key => {
+        UIChanged[key] = false;
+    });
+}
+
+export function resetAllFlags() {
+    resetFlags(UIChangedToReinit);
+    resetFlags(UILightBufferChanged);
+    resetFlags(UICameraBufferChanged);
+    resetFlags(UIConfigChanged);
 }

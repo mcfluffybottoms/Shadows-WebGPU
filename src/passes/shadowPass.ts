@@ -127,8 +127,7 @@ export async function shadowPass(
     resources: shadowPassResources,
     gpu: webGPUData,
     encoder: GPUCommandEncoder,
-    scene: Scene,
-    numOfCascades: number
+    scene: Scene
 ) {
     const { entities } = scene;
     const { pipeline, lightBindGroups, entityBindGroups, depthTexture } = resources;
