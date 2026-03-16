@@ -32,72 +32,75 @@ export type RenderInfo = {
   renderDepthPassResources: renderDepthPassResources,
 }
 
-function updateCamera(
-  canvas: HTMLCanvasElement,
-  renderInfo: RenderInfo
-) {
-  let {camera: orthoCamera, controls: orthoControls} = renderInfo.orthoConfig;
-  let {camera: perspectiveCamera, controls: perspectiveControls} = renderInfo.perspectiveConfig;
-  let {camera: mainCamera, controls: mainControls} = renderInfo.mainConfig;
+async function updateData(renderData: RenderInfo) {
+  //load config
+  if (UIConfigChanged.configChanged) {
+    fillConfigBuffers(
+      renderData.gpu,
+      renderData.configBuffers,
+      UI.shadowMap,
+      UI.numberOfSamples,
+      UI.numOfCascades,
+      UI.biasType,
+      UI.biasValue,
+      UI.lightOn,
+      UI.cascadeLayers,
+      UI.lightAmbient
+    );
+  }
+
+  // change camera if needed
   if (UICameraBufferChanged.cameraType) {
-    mainControls.disconnect();
+    renderData.mainConfig.controls.disconnect();
     if (UI.cameraType == cameraWhat.Orthographic) {
-      mainCamera = orthoCamera;
-      mainControls = orthoControls;
+      renderData.mainConfig.camera = renderData.orthoConfig.camera;
+      renderData.mainConfig.controls = renderData.orthoConfig.controls;
     } else {
-      mainCamera = perspectiveCamera;
-      mainControls = perspectiveControls;
+      renderData.mainConfig.camera = renderData.perspectiveConfig.camera;
+      renderData.mainConfig.controls = renderData.perspectiveConfig.controls;
     }
-    mainControls.connect(canvas);
+    renderData.mainConfig.controls.connect(renderData.gpu.canvas);
     UICameraBufferChanged.cameraType = false;
   }
-}
 
-async function updateDepthMap(renderData: RenderInfo) {
-  let {gpu, depthMap, depthPassResources, renderDepthPassResources, shadowPassResources, sceneBuffers, configBuffers, scene} = renderData;
-  // UIChangedToReinit.depthPassSize || UIChangedToReinit.numOfCascades
+  // load light data
+  if (UILightBufferChanged.direction) {
+    renderData.scene.light.direction = UI.direction;
+    UILightBufferChanged.direction = false;
+  }
+  renderData.scene.light.update(
+    renderData.mainConfig.camera,
+    UI.numOfCascades,
+    UI.depthPassSize
+  );
+
+  // reinit
   if (UIChangedToReinit.depthPassSize || UIChangedToReinit.numOfCascades) {
-    depthMap = getDepthMap(gpu, UI.depthPassSize, UI.numOfCascades);
-    depthPassResources = await initDepthPass(gpu, scene, sceneBuffers.lightBuffer, sceneBuffers.objectBuffer, configBuffers, UI.numOfCascades);
-    shadowPassResources = await initShadowPass(gpu, scene, depthMap, sceneBuffers, configBuffers, UI.numOfCascades);
-    renderDepthPassResources = await initRenderDepthPass(gpu, depthMap, UI.depthMapCascade);
+    renderData.depthMap = getDepthMap(renderData.gpu, UI.depthPassSize, UI.numOfCascades);
+    renderData.depthPassResources = await initDepthPass(
+      renderData.gpu,
+      renderData.scene,
+      renderData.sceneBuffers.lightBuffer,
+      renderData.sceneBuffers.objectBuffer,
+      renderData.configBuffers,
+      UI.numOfCascades
+    );
+    renderData.shadowPassResources = await initShadowPass(
+      renderData.gpu,
+      renderData.scene,
+      renderData.depthMap,
+      renderData.sceneBuffers,
+      renderData.configBuffers,
+      UI.numOfCascades
+    );
+    renderData.renderDepthPassResources = await initRenderDepthPass(
+      renderData.gpu,
+      renderData.depthMap,
+      UI.depthMapCascade
+    );
     UIChangedToReinit.depthPassSize = false;
     UIChangedToReinit.numOfCascades = false;
   }
-  if (UIChangedToReinit.depthMapCascade) {
-    renderDepthPassResources = await initRenderDepthPass(gpu, depthMap, UI.depthMapCascade);
-    UIChangedToReinit.depthMapCascade = false;
-  }
-}
-
-async function updateLight(renderData: RenderInfo) {
-  let {scene, mainConfig} = renderData;
-  let camera = mainConfig.camera;
-  if (UILightBufferChanged.direction) {
-    scene.light.direction = UI.direction;
-    scene.light.update(camera, UI.numOfCascades, UI.depthPassSize);
-    UILightBufferChanged.direction = false;
-    return true;
-  }
-  scene.light.update(camera, UI.numOfCascades, UI.depthPassSize);
-  return false;
-}
-
-export function updateConfig(gpu: webGPUData, buffers: ConfigBuffers) : boolean {
-    if(!UIConfigChanged.configChanged) return false;
-    fillConfigBuffers(
-        gpu, 
-        buffers, 
-        UI.shadowMap, 
-        UI.numberOfSamples, 
-        UI.numOfCascades, 
-        UI.biasType, 
-        UI.biasValue,
-        UI.lightOn,
-        UI.cascadeLayers,
-        UI.lightAmbient
-    );
-    return true;
 }
 
 // ----- INIT ----- //
@@ -106,9 +109,6 @@ function initExternal() {
 }
 
 async function initRender(): Promise<RenderInfo> {
-  // reset exterior to load everything
-  resetAllFlags();
-  
   // ---- get webgpu data ---- //
   const gpu = await getWebGPU();
 
@@ -125,7 +125,7 @@ async function initRender(): Promise<RenderInfo> {
   }
 
   let mainConfig = perspectiveConfig;
-  
+
   // light source
   const light = new DirectionalLight(mainConfig.camera, UI.numOfCascades);
   light.direction = UI.direction;
@@ -154,71 +154,74 @@ async function initRender(): Promise<RenderInfo> {
   };
 
   // ------ init renderpass data ------ //
-  // config
+  // create buffers
   const sceneBuffers = createSceneBuffers(gpu, scene);
   const configBuffer = createConfigBuffers(gpu);
-  
+
   //load buffers
   fillConfigBuffers(
-      gpu, 
-      configBuffer, 
-      UI.shadowMap, 
-      UI.numberOfSamples, 
-      UI.numOfCascades, 
-      UI.biasType, 
-      UI.biasValue,
-      UI.lightOn,
-      UI.cascadeLayers,
-      UI.lightAmbient
+    gpu,
+    configBuffer,
+    UI.shadowMap,
+    UI.numberOfSamples,
+    UI.numOfCascades,
+    UI.biasType,
+    UI.biasValue,
+    UI.lightOn,
+    UI.cascadeLayers,
+    UI.lightAmbient
   );
   fillSceneBuffers(
-    gpu, 
-    sceneBuffers, 
+    gpu,
+    sceneBuffers,
     scene,
     mainConfig.camera,
-    UI.numOfCascades, 
-    {camera: true, light: true, object: true}
+    UI.numOfCascades,
+    { camera: true, light: true, object: true }
   );
 
+  // create resources
   var depthMap = getDepthMap(gpu, UI.depthPassSize, UI.numOfCascades);
   var depthPassResources = await initDepthPass(
-    gpu, 
-    scene, 
-    sceneBuffers.lightBuffer, 
-    sceneBuffers.objectBuffer, 
-    configBuffer, 
+    gpu,
+    scene,
+    sceneBuffers.lightBuffer,
+    sceneBuffers.objectBuffer,
+    configBuffer,
     UI.numOfCascades
   );
   var shadowPassResources = await initShadowPass(
-    gpu, scene, 
-    depthMap, 
-    sceneBuffers, 
-    configBuffer, 
+    gpu, scene,
+    depthMap,
+    sceneBuffers,
+    configBuffer,
     UI.numOfCascades
   );
   var renderDepthPassResources = await initRenderDepthPass(
-    gpu, 
-    depthMap, 
+    gpu,
+    depthMap,
     UI.depthMapCascade
   );
-  
-  return {
-      gpu: gpu,
-      orthoConfig: orthoConfig,
-      perspectiveConfig: perspectiveConfig,
-      mainConfig: mainConfig,
-      scene: scene,
-      sceneBuffers: sceneBuffers,
-      configBuffers: configBuffer,
-      depthMap: depthMap,
-      depthPassResources: depthPassResources,
-      shadowPassResources: shadowPassResources,
-      renderDepthPassResources: renderDepthPassResources,
-  }
+
+  let renderData = {
+    gpu: gpu,
+    orthoConfig: orthoConfig,
+    perspectiveConfig: perspectiveConfig,
+    mainConfig: mainConfig,
+    scene: scene,
+    sceneBuffers: sceneBuffers,
+    configBuffers: configBuffer,
+    depthMap: depthMap,
+    depthPassResources: depthPassResources,
+    shadowPassResources: shadowPassResources,
+    renderDepthPassResources: renderDepthPassResources,
+  };
+  updateData(renderData);
+  return renderData;
 }
 
 async function renderColor(renderData: RenderInfo, encoder: GPUCommandEncoder) {
-  let {gpu, renderDepthPassResources, shadowPassResources, scene} = renderData;
+  let { gpu, renderDepthPassResources, shadowPassResources, scene } = renderData;
   if (UI.renderWhat == renderWhat.depthMap) {
     await renderDepthPass(renderDepthPassResources, gpu, encoder);
   } else {
@@ -253,41 +256,30 @@ async function animate() {
   //   requestAnimationFrame(animate);
   //   return;
   // }
-  
+
   // get data
-  let {
-    gpu, 
-    depthMap, 
-    depthPassResources, 
-    sceneBuffers, 
-    configBuffers,
-    scene
-  } = renderData;
-  const { camera, controls } = renderData.mainConfig;
+  let camera = renderData.mainConfig.camera;
 
   // update settings
-  updateConfig(gpu, configBuffers);
-  updateCamera(gpu.canvas, renderData);
-  await updateLight(renderData);
-  await updateDepthMap(renderData);
+  updateData(renderData);
 
   // start profiling
   stats.start();
 
   // run render pipeline
-  const encoder = gpu.device.createCommandEncoder();
-  fillSceneBuffers(gpu, sceneBuffers, scene, camera, UI.numOfCascades, {camera: true, light: true, object: false});
-  await depthPass(depthMap, depthPassResources, gpu, encoder, scene, UI.numOfCascades);
+  const encoder = renderData.gpu.device.createCommandEncoder();
+  fillSceneBuffers(renderData.gpu, renderData.sceneBuffers, renderData.scene, renderData.mainConfig.camera, UI.numOfCascades, { camera: true, light: true, object: false });
+  await depthPass(renderData.depthMap, renderData.depthPassResources, renderData.gpu, encoder, renderData.scene, UI.numOfCascades);
   await renderColor(renderData, encoder);
-  gpu.device.queue.submit([encoder.finish()]);
+  renderData.gpu.device.queue.submit([encoder.finish()]);
 
   // ------ PROFILING ------ //
   let elapsed = stats.end();
-  if(elapsed) {
+  if (elapsed) {
     changeFPS(stats.fps);
     changeMPF(stats.avgMpf);
   }
-  
+
   requestAnimationFrame(animate);
 }
 
