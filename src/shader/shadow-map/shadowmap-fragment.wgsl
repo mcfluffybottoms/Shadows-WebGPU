@@ -27,7 +27,8 @@ struct Config {
 
 struct FragmentIn {
     @location(1) fragPos: vec4<f32>,
-    @location(2) fragNorm: vec3<f32>
+    @location(2) fragNorm: vec3<f32>,
+    @location(3) clipPosZ: f32
 }
 
 @group(1) @binding(0) var<uniform> light: LightUniforms;
@@ -46,22 +47,16 @@ const colors: array<vec3f, MAX_CASCADES> = array<vec3f, MAX_CASCADES>(
     vec3f(0.5, 0.0, 1.0)  // Purple
 );
 
-fn getCascadeId(worldPos: vec4f) -> u32 {
+fn getCascadeId(in: FragmentIn) -> u32 {
     let numOfCascades = i32(config.numOfCascades);
     
     for (var i = 0; i < numOfCascades; i++) {
-        // let split = lightOptions.splits[i].y;
-        var lightPos = light.viewProjMatrix[i] * worldPos;
-        var lightPosXYZ = lightPos.xyz / lightPos.w;
-        lightPosXYZ.x = lightPosXYZ.x * 0.5 + 0.5;
-        lightPosXYZ.y = -lightPosXYZ.y * 0.5 + 0.5;
-        lightPosXYZ.z = lightPosXYZ.z;
-
-        if (all(lightPosXYZ > vec3<f32>(0.0)) && all(lightPosXYZ < vec3<f32>(1.0))) {
+        let split = lightOptions.splits[i].y;
+        if (abs(in.clipPosZ) < split) {
             return u32(i);
         }
     }
-    return u32(numOfCascades - 1);
+    return u32(numOfCascades);
 }
 
 fn getBias(projCoords: vec3f) -> f32 {
@@ -80,7 +75,7 @@ fn getBias(projCoords: vec3f) -> f32 {
 fn shadowCalculation(in: FragmentIn, normal: vec3f, lightDir: vec3f) -> f32 {
 
     // select cascade 
-    var cascadeId = getCascadeId(in.fragPos);
+    var cascadeId = getCascadeId(in);
 
     // light fragment pos
     var projCoordsXYZW = light.viewProjMatrix[cascadeId] * in.fragPos;
@@ -144,7 +139,7 @@ fn main(in: FragmentIn) -> @location(0) vec4f {
 
     // shadow
     var shadow = 1.0;
-    var cascadeId = getCascadeId(in.fragPos);
+    var cascadeId = getCascadeId(in);
     if(config.shadowMapOn == 1) {
         shadow = shadowCalculation(in, normal, lightDir);
     }

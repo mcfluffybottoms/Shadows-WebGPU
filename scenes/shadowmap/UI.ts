@@ -9,7 +9,6 @@ function hideDivElementById(shouldHide: boolean, id: string) {
     }
 }
 export function initUInteractions(): void {
-    (document.getElementById('changePos') as HTMLSelectElement).value = '0';
     (document.getElementById('render') as HTMLSelectElement).value = '0';
     (document.getElementById('cameraType') as HTMLSelectElement).value = '0';
     (document.getElementById('shadowMapOn') as HTMLInputElement).checked = true;
@@ -27,6 +26,8 @@ export function initUInteractions(): void {
     (document.getElementById('lightOn') as HTMLInputElement).checked = UI.lightOn;
     (document.getElementById('cascadeLayers') as HTMLInputElement).checked = UI.cascadeLayers;
     (document.getElementById('lightAmbient') as HTMLInputElement).value = UI.lightAmbient.toString();
+
+    (document.getElementById('lambda') as HTMLInputElement).value = UI.lambda.toString();
 
     hideDivElementById(UI.shadowMap, "depthMapSettings");
     let htmlElement = document.getElementById('depthCascade') as HTMLInputElement;
@@ -46,6 +47,7 @@ export function initUInteractions(): void {
         const cameraSelect = document.getElementById('cameraType') as HTMLSelectElement;
         UI.cameraType = cameraSelect.value == "0" ? cameraWhat.Perspective : cameraWhat.Orthographic;
         UICameraBufferChanged.cameraType = true;
+        console.log(`Camera changed to: ${UI.cameraType}`); 
     });
 
     // change shadow map on/off
@@ -132,6 +134,12 @@ export function initUInteractions(): void {
         const sizeInput = document.getElementById('biasValue') as HTMLInputElement;
         UI.biasValue = sizeInput.valueAsNumber;
         UIConfigChanged.configChanged = true;
+    });
+
+    // lambda
+    document.getElementById('lambda')?.addEventListener('change', () => {
+        const sizeInput = document.getElementById('lambda') as HTMLInputElement;
+        UI.lambda = sizeInput.valueAsNumber;
     });
 
 }

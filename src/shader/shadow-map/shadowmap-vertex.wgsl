@@ -24,6 +24,7 @@ struct Vertex {
 struct VertexOut {
     @location(1) fragPos: vec4<f32>,
     @location(2) fragNorm: vec3<f32>,
+    @location(3) clipPosZ: f32,
     @builtin(position) Position: vec4f,
 };
 struct Config {
@@ -50,6 +51,7 @@ fn main(v: Vertex) -> VertexOut {
     var output: VertexOut;
     output.Position = camera.viewProjMatrix * worldPos;
     output.fragPos = worldPos;
+    output.clipPosZ = output.Position.z;
     output.fragNorm = (object.normalMatrix * vec4f(v.normal, 0.0)).xyz;
     
     return output;

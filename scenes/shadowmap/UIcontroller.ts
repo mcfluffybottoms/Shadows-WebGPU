@@ -35,6 +35,7 @@ export let UI = {
     numberOfSamples: 4,
     biasType: 2,
     biasValue: 0.003,
+    lambda: 0.5,
 };
 
 // dirty flags for reinit

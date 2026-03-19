@@ -18,11 +18,6 @@
           <option value="0" selected>Perspective</option>
           <option value="1">Orthographic</option>
         </select>
-        Camera to Move:
-        <select id="changePos" data-default="0">
-          <option value="0" selected>Camera</option>
-          <option value="1">Light</option>
-        </select>
       </div>
     </details>
     <details>
@@ -54,6 +49,7 @@
         <br/>
         Direction z:
         <input id="dirz" type="range" min="0.1" max="1" step="0.01"/>
+        <br/>
         Phong Light:
         <input id="lightOn" type="checkbox"/>
         <br/>
@@ -82,7 +78,10 @@
         <input id="depthPassSize" type="number" min="0" max="16384"/>
         <br/>
         Bias Value: 
-        <input id="biasValue" type="number" min="0" max="0.1"  step="0.0001"/>
+        <input id="biasValue" type="number" min="0" max="0.1" step="0.0001"/>
+        <br/>
+        Lambda: 
+        <input id="lambda" type="number" min="0" max="1" step="0.01"/>
       </div>
     </details>
     

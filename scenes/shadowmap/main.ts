@@ -20,8 +20,6 @@ import { Stats } from "../../src/utils/stats";
 
 export type RenderInfo = {
   gpu: webGPUData,
-  orthoConfig: CameraConfig,
-  perspectiveConfig: CameraConfig,
   mainConfig: CameraConfig,
   scene: Scene,
   sceneBuffers: SceneBuffers,
@@ -53,14 +51,16 @@ async function updateData(renderData: RenderInfo) {
   if (UICameraBufferChanged.cameraType) {
     renderData.mainConfig.controls.disconnect();
     if (UI.cameraType == cameraWhat.Orthographic) {
-      renderData.mainConfig.camera = renderData.orthoConfig.camera;
-      renderData.mainConfig.controls = renderData.orthoConfig.controls;
+      renderData.mainConfig.camera = addCamera(renderData.gpu.canvas, CameraType.Orthographic);;
+      renderData.mainConfig.controls = setControls(renderData.gpu.canvas, renderData.mainConfig.camera);
     } else {
-      renderData.mainConfig.camera = renderData.perspectiveConfig.camera;
-      renderData.mainConfig.controls = renderData.perspectiveConfig.controls;
+      renderData.mainConfig.camera = addCamera(renderData.gpu.canvas, CameraType.Perspective);
+      renderData.mainConfig.controls = setControls(renderData.gpu.canvas, renderData.mainConfig.camera);
     }
     renderData.mainConfig.controls.connect(renderData.gpu.canvas);
     UICameraBufferChanged.cameraType = false;
+
+    renderData.mainConfig.controls.update();
   }
 
   // load light data
@@ -71,7 +71,8 @@ async function updateData(renderData: RenderInfo) {
   renderData.scene.light.update(
     renderData.mainConfig.camera,
     UI.numOfCascades,
-    UI.depthPassSize
+    UI.depthPassSize, 
+    UI.lambda
   );
 
   // reinit
@@ -93,13 +94,17 @@ async function updateData(renderData: RenderInfo) {
       renderData.configBuffers,
       UI.numOfCascades
     );
+    UIChangedToReinit.depthPassSize = false;
+    UIChangedToReinit.numOfCascades = false;
+  }
+
+  if (UIChangedToReinit.depthMapCascade) {
     renderData.renderDepthPassResources = await initRenderDepthPass(
       renderData.gpu,
       renderData.depthMap,
       UI.depthMapCascade
     );
-    UIChangedToReinit.depthPassSize = false;
-    UIChangedToReinit.numOfCascades = false;
+    UIChangedToReinit.depthMapCascade = false;
   }
 }
 
@@ -113,18 +118,11 @@ async function initRender(): Promise<RenderInfo> {
   const gpu = await getWebGPU();
 
   // camera
-  let orthoCamera = addCamera(gpu.canvas, CameraType.Orthographic);
-  let orthoConfig = {
-    camera: orthoCamera,
-    controls: setControls(gpu.canvas, orthoCamera)
-  }
   let perspectiveCamera = addCamera(gpu.canvas, CameraType.Perspective);
-  let perspectiveConfig = {
+  let mainConfig = {
     camera: perspectiveCamera,
     controls: setControls(gpu.canvas, perspectiveCamera)
   }
-
-  let mainConfig = perspectiveConfig;
 
   // light source
   const light = new DirectionalLight(mainConfig.camera, UI.numOfCascades);
@@ -205,8 +203,6 @@ async function initRender(): Promise<RenderInfo> {
 
   let renderData = {
     gpu: gpu,
-    orthoConfig: orthoConfig,
-    perspectiveConfig: perspectiveConfig,
     mainConfig: mainConfig,
     scene: scene,
     sceneBuffers: sceneBuffers,
