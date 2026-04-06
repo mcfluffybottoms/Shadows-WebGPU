@@ -14,7 +14,23 @@ export enum cameraWhat {
 }
 
 // global data config to store changes to UI
-export let UI = {
+export type UIConfig = {
+    renderWhat: renderWhat;
+    cameraType: cameraWhat;
+    direction: THREE.Vector3;
+    depthPassSize: number;
+    numOfCascades: number;
+    depthMapCascade: number;
+    cascadeLayers: boolean;
+    lightOn: boolean;
+    lightAmbient: number;
+    shadowMap: boolean;
+    numberOfSamples: number;
+    biasType: number;
+    biasValue: number;
+    lambda: number;
+}
+export let UI: UIConfig = {
     // change view
     renderWhat: renderWhat.scene,
     //camera
@@ -34,42 +50,29 @@ export let UI = {
     shadowMap: true,
     numberOfSamples: 4,
     biasType: 2,
-    biasValue: 0.003,
+    biasValue: 0.001,
     lambda: 0.5,
 };
 
+export type UIFlags = {
+    depthPassSize: boolean;
+    numOfCascades: boolean;
+    depthMapCascade: boolean;
+    direction: boolean;
+    cameraType: boolean;
+    configChanged: boolean;
+}
+
 // dirty flags for reinit
-export let UIChangedToReinit = {
+export let UIFlags: UIFlags = {
+    // UIChangedToReinit
     depthPassSize: true,
     numOfCascades: true,
     depthMapCascade: true,
-};
-
-// dirty flags for light
-export let UILightBufferChanged = {
+    // UILightBufferChanged
     direction: true,
-};
-
-// dirty flags for camera
-export let UICameraBufferChanged = {
+    // UICameraBufferChanged
     cameraType: true,
-};
-
-export let UIConfigChanged = {
+    // UIConfigChanged
     configChanged: true
 };
-
-// reset flags to  true
-export function resetFlags(UIChanged: any) {
-    const keys = Object.keys(UIChanged);
-    keys.forEach(key => {
-        UIChanged[key] = false;
-    });
-}
-
-export function resetAllFlags() {
-    resetFlags(UIChangedToReinit);
-    resetFlags(UILightBufferChanged);
-    resetFlags(UICameraBufferChanged);
-    resetFlags(UIConfigChanged);
-}

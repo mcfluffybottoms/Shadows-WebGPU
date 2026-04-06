@@ -1,5 +1,5 @@
-import { webGPUData } from "../utils/webgpu-data";
-import { depthMap } from "./depthPass";
+import { WebGPUData } from "../utils/webgpu-data";
+import { DepthMap } from "./depth-pass";
 
 import debugDepthVertex from '../shader/shadow-map/debug-depth-map.wgsl?raw';
 import debugDepthFragment from '../shader/shadow-map/debug-depth-map-frag.wgsl?raw';
@@ -10,8 +10,8 @@ export type renderDepthPassResources = {
 };
 
 export async function initRenderDepthPass(
-    gpu: webGPUData,
-    d: depthMap,
+    gpu: WebGPUData,
+    d: DepthMap,
     depthMapCascade: number
 ) : Promise<renderDepthPassResources> {
     const { depthTexture } = d;
@@ -53,7 +53,7 @@ export async function initRenderDepthPass(
 }
 export async function renderDepthPass(
     resources: renderDepthPassResources,
-    gpu: webGPUData,
+    gpu: WebGPUData,
     encoder: GPUCommandEncoder
 ) {
     const { pipeline, bindGroup } = resources;

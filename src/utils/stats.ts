@@ -1,4 +1,13 @@
 export class Stats {
+  public avgMpf: number;
+  public fps: number;
+  private frameCount: number;
+  private frameEnd: number
+  private frameStart: number;
+  private lastTime: number;
+  private mpf: number;
+  private mpfHistory: number[];
+
   constructor() {
     this.lastTime = performance.now();
     this.frameCount = 0;
@@ -8,10 +17,6 @@ export class Stats {
     this.mpfHistory = [];
     this.frameStart = 0;
     this.frameEnd = 0;
-  }
-
-  public start() {
-    this.frameStart = performance.now();
   }
 
   public end() {
@@ -37,13 +42,8 @@ export class Stats {
 
     return elapsed >= 1000;
   }
-    
-  lastTime: number; 
-  frameCount: number;
-  fps: number;
-  mpf: number;
-  avgMpf: number;
-  mpfHistory: number[];
-  frameStart: number;
-  frameEnd: number
+
+  public start() {
+    this.frameStart = performance.now();
+  }
 }

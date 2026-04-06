@@ -17,6 +17,14 @@ export type Split = {
 const _origin = new THREE.Vector3( 0, 0, 0 );
 
 export class DirectionalLight implements LightSource {
+    private numOfCascades: number;
+    private upVector: THREE.Vector3;
+    direction: THREE.Vector3;
+    projMatrix: THREE.Matrix4;
+    splits: Split[];
+    viewMatrix: THREE.Matrix4;
+    viewProjMatrix: THREE.Matrix4[];
+
     constructor(camera: THREE.OrthographicCamera | THREE.PerspectiveCamera, numOfCascades: number) {
         this.upVector = new THREE.Vector3(0, 1, 0);
         this.projMatrix = new THREE.Matrix4;
@@ -97,18 +105,6 @@ export class DirectionalLight implements LightSource {
             }
         );
 
-        // const zMult = 1.0;
-        // if(box.min.z < 0) {
-        //     box.min.z *= zMult;
-        // } else {
-        //     box.min.z /= zMult;
-        // }
-        // if(box.max.z < 0) {
-        //     box.max.z /= zMult;
-        // } else {
-        //     box.max.z *= zMult;
-        // }
-
         box.min.x = Math.floor(box.min.x / texelWidth) * texelWidth;
         box.min.y = Math.floor(box.min.y / texelHeight) * texelHeight;
         box.max.x = Math.floor(box.max.x / texelWidth) * texelWidth;
@@ -137,15 +133,6 @@ export class DirectionalLight implements LightSource {
             this.viewProjMatrix[i] = getVPraw(this.projMatrix, this.viewMatrix);
         }
     }
-
-    direction: THREE.Vector3;
-    projMatrix: THREE.Matrix4;
-    viewMatrix: THREE.Matrix4;
-    viewProjMatrix: THREE.Matrix4[];
-    splits: Split[];
-    upVector: THREE.Vector3;
-
-    numOfCascades: number;
 };
 // ------ GENERATING VP FOR CASCADED SHADOWS ------ //
 

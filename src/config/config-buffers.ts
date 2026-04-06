@@ -1,4 +1,4 @@
-import { webGPUData } from "../utils/webgpu-data";
+import { WebGPUData } from "../utils/webgpu-data";
 
 export type ConfigBuffers = {
   configBuffer: GPUBuffer;
@@ -6,7 +6,7 @@ export type ConfigBuffers = {
 };
 
 export function createConfigBuffers(
-    gpu: webGPUData
+    gpu: WebGPUData
 ) : ConfigBuffers {
     const configBufferSize = 6 * Uint32Array.BYTES_PER_ELEMENT + 2 * Float32Array.BYTES_PER_ELEMENT;
 
@@ -22,7 +22,7 @@ export function createConfigBuffers(
 }
 
 export function fillConfigBuffers(
-    gpu: webGPUData,
+    gpu: WebGPUData,
     buffers: ConfigBuffers,
     shadows: boolean,
     numberOfSamples: number,

@@ -1,8 +1,9 @@
 import * as THREE from "three/webgpu";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
-import { webGPUData } from "./webgpu-data";
-import { Entity, ModelBuffers } from "../scene/scene-types";
+import { WebGPUData } from "./webgpu-data";
+import { addEntity, Entity } from "../scene/scene-types";
+import { ModelBuffers } from "../scene/buffer-types";
 
 // --------------THREE JS PARSER FOR OBJ FILES-------------- //
 
@@ -34,7 +35,7 @@ export async function loadAndAddObject(path: string) {
 // --------------LOAD ONTO GPUBUFFER-------------- //
 
 const createVertexBuffer = (
-  gpu: webGPUData,
+  gpu: WebGPUData,
   positions: THREE.BufferAttribute | THREE.InterleavedBufferAttribute,
   normals: THREE.BufferAttribute | THREE.InterleavedBufferAttribute,
   uvs?: THREE.BufferAttribute | THREE.InterleavedBufferAttribute
@@ -73,7 +74,7 @@ const createVertexBuffer = (
 };
 
 const createIndexBuffer = (
-  gpu: webGPUData,
+  gpu: WebGPUData,
   triangles: THREE.BufferAttribute | null,
 ): GPUBuffer | null => {
   if (!triangles || !triangles.array || triangles.array.length === 0) {
@@ -97,7 +98,7 @@ const createIndexBuffer = (
 };
 
 export function getModelBuffersFromMesh(
-  gpu: webGPUData,
+  gpu: WebGPUData,
   mesh: THREE.Mesh
 ): ModelBuffers {
   const meshes: ModelBuffers[] = [];
@@ -120,17 +121,20 @@ export function getModelBuffersFromMesh(
 }
 
 export function getModelBuffers(
-  gpu: webGPUData,
-  group: THREE.Group
+  gpu: WebGPUData,
+  group: THREE.Group, 
+  position?: THREE.Vector3, 
+  rotation?: THREE.Vector3, 
+  scale?: THREE.Vector3
 ) {
-  const meshes: Entity[] = [];
+  const entities: Entity[] = [];
   group.traverse((obj) => {
     if ((obj as THREE.Mesh).isMesh) {
       const mesh = getModelBuffersFromMesh(gpu, obj as THREE.Mesh);
-      if (meshes) meshes.push({ mesh, modelMatrix: obj.matrixWorld });
+      if (entities) entities.push(addEntity(mesh, obj.matrixWorld, position, rotation, scale));
     }
   });
-  return meshes;
+  return entities;
 }
 
 export const vertexBuffers: Iterable<GPUVertexBufferLayout | null | undefined> = [{
@@ -150,16 +154,20 @@ export const vertexBuffers: Iterable<GPUVertexBufferLayout | null | undefined> =
 }]
 
 export function createEntityFromGeometry(
-  gpu: webGPUData,
+  gpu: WebGPUData,
   geom: THREE.BufferGeometry,
-  pos: { x: number, y: number, z: number }
+  pos: { x: number, y: number, z: number },
+  rotation: { x: number | undefined, y: number | undefined, z: number | undefined }
 ) {
   const mesh = new THREE.Mesh(geom);
   mesh.position.set(pos.x, pos.y, pos.z);
+
+  mesh.rotation.x = rotation.x ?? mesh.rotation.x;
+  mesh.rotation.y = rotation.y ?? mesh.rotation.y;
+  mesh.rotation.z = rotation.z ?? mesh.rotation.z;
+  
   mesh.updateMatrixWorld();
-  const entity = {
-    mesh: getModelBuffersFromMesh(gpu, mesh),
-    modelMatrix: mesh.matrixWorld
-  };
+
+  const entity = addEntity(getModelBuffersFromMesh(gpu, mesh), mesh.matrixWorld.clone(), mesh.position);
   return entity;
 }

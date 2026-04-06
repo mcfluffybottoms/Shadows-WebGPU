@@ -1,6 +1,6 @@
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import * as THREE from 'three/webgpu'
-import { webGPUData } from './webgpu-data';
+import { WebGPUData } from './webgpu-data';
 import { DEG2RAD } from 'three/src/math/MathUtils.js';
 
 // ------------- CONTROLS AND CAMERAS FROM THREE JS ------------- //

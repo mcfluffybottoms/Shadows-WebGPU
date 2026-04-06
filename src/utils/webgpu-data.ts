@@ -1,11 +1,11 @@
-export type webGPUData = {
+export type WebGPUData = {
   canvas: HTMLCanvasElement;
   adapter: GPUAdapter;
   device: GPUDevice;
   context: GPUCanvasContext;
 };
 
-export async function getWebGPU(): Promise<webGPUData> {
+export async function getWebGPU(): Promise<WebGPUData> {
   const canvas = document.querySelector('canvas') as HTMLCanvasElement;
   const adapter = await navigator.gpu?.requestAdapter({
     featureLevel: 'compatibility',

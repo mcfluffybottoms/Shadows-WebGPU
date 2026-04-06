@@ -1,7 +1,7 @@
 import * as THREE from "three/webgpu";
-import { Scene } from "./scene-types";
+import { ComponentsMap, Scene } from "./scene-types";
 import { getVP } from "../utils/camera-utils";
-import { webGPUData } from "../utils/webgpu-data";
+import { WebGPUData } from "../utils/webgpu-data";
 
 export type SceneBuffers = {
   cameraBuffer: GPUBuffer;
@@ -15,7 +15,7 @@ const OFFSET = 64 * Float32Array.BYTES_PER_ELEMENT;
 const MAX_CASCADES = 8;
 
 export function createSceneBuffers(
-    gpu: webGPUData,
+    gpu: WebGPUData,
     scene: Scene
 ) : SceneBuffers {
     const { entities } = scene;
@@ -62,7 +62,7 @@ type bufferToFill = {
 }
 
 export function fillSceneBuffers(
-    gpu: webGPUData,
+    gpu: WebGPUData,
     buffers: SceneBuffers,
     scene: Scene,
     camera: THREE.OrthographicCamera | THREE.PerspectiveCamera,
@@ -110,7 +110,12 @@ export function fillSceneBuffers(
         // object buffers
         const modelMatrixArray =  new Float32Array(entities.length * 64);
         for (let i = 0; i < entities.length; i++) {
-            const modelMatrix = entities[i].modelMatrix;
+            const entity_rc = ComponentsMap.get(entities[i])?.ModelComponent;
+            if (!entity_rc) {
+                console.warn("Entity " + entities[i].id + " does not have a render component present.");
+                continue;
+            }
+            const { modelMatrix } = entity_rc;
             const normalMatrix = modelMatrix.clone().invert().transpose();
             modelMatrixArray.set(modelMatrix.toArray(), i * 64);
             modelMatrixArray.set(normalMatrix.toArray(), i * 64 + 16);

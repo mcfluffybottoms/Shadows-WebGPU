@@ -1,4 +1,4 @@
-import { cameraWhat, controllingWhat, renderWhat, UI, UICameraBufferChanged, UIChangedToReinit, UIConfigChanged, UILightBufferChanged } from "./UIcontroller";
+import { cameraWhat, renderWhat, UI, UIFlags } from "./UI-flags-types";
 
 function hideDivElementById(shouldHide: boolean, id: string) {
     let htmlElement = document.getElementById(id);
@@ -46,7 +46,7 @@ export function initUInteractions(): void {
     document.getElementById('cameraType')?.addEventListener('change', () => {
         const cameraSelect = document.getElementById('cameraType') as HTMLSelectElement;
         UI.cameraType = cameraSelect.value == "0" ? cameraWhat.Perspective : cameraWhat.Orthographic;
-        UICameraBufferChanged.cameraType = true;
+        UIFlags.cameraType = true;
         console.log(`Camera changed to: ${UI.cameraType}`); 
     });
 
@@ -54,49 +54,49 @@ export function initUInteractions(): void {
     document.getElementById('shadowMapOn')?.addEventListener('change', () => {
         const shadowMapCheckbox = document.getElementById('shadowMapOn') as HTMLInputElement;
         UI.shadowMap = shadowMapCheckbox.checked;
-        UIConfigChanged.configChanged = true;
+        UIFlags.configChanged = true;
     });
 
     // change if cascade layers colors are showing
     document.getElementById('cascadeLayers')?.addEventListener('change', () => {
         const shadowMapCheckbox = document.getElementById('cascadeLayers') as HTMLInputElement;
         UI.cascadeLayers = shadowMapCheckbox.checked;
-        UIConfigChanged.configChanged = true;
+        UIFlags.configChanged = true;
     });
 
     // change if light is on
     document.getElementById('lightOn')?.addEventListener('change', () => {
         const shadowMapCheckbox = document.getElementById('lightOn') as HTMLInputElement;
         UI.lightOn = shadowMapCheckbox.checked;
-        UIConfigChanged.configChanged = true;
+        UIFlags.configChanged = true;
     });
 
     // get light ambient
     document.getElementById('lightAmbient')?.addEventListener('change', () => {
         const shadowMapCheckbox = document.getElementById('lightAmbient') as HTMLInputElement;
         UI.lightAmbient = shadowMapCheckbox.valueAsNumber;
-        UIConfigChanged.configChanged = true;
+        UIFlags.configChanged = true;
     });
 
     // change depth map cascade
     document.getElementById('depthCascade')?.addEventListener('change', () => {
         const samplesInput = document.getElementById('depthCascade') as HTMLInputElement;
         UI.depthMapCascade = samplesInput.valueAsNumber;
-        UIChangedToReinit.depthMapCascade = true;
+        UIFlags.depthMapCascade = true;
     });
 
     // change samples
     document.getElementById('numberOfSamples')?.addEventListener('change', () => {
         const samplesInput = document.getElementById('numberOfSamples') as HTMLInputElement;
         UI.numberOfSamples = samplesInput.valueAsNumber;
-        UIConfigChanged.configChanged = true;
+        UIFlags.configChanged = true;
     });
 
     // change number of cascades
     document.getElementById('numberOfCascades')?.addEventListener('change', () => {
         const samplesInput = document.getElementById('numberOfCascades') as HTMLInputElement;
         UI.numOfCascades = samplesInput.valueAsNumber;
-        UIChangedToReinit.numOfCascades = true;
+        UIFlags.numOfCascades = true;
 
         // get new max and value
         let htmlElement = document.getElementById('depthCascade') as HTMLInputElement;
@@ -109,31 +109,31 @@ export function initUInteractions(): void {
     document.getElementById('depthPassSize')?.addEventListener('change', () => {
         const sizeInput = document.getElementById('depthPassSize') as HTMLInputElement;
         UI.depthPassSize = sizeInput.valueAsNumber;
-        UIChangedToReinit.depthPassSize = true;
+        UIFlags.depthPassSize = true;
     });
 
     // change direction
     document.getElementById('dirx')?.addEventListener('input', () => {
         const sizeInput = document.getElementById('dirx') as HTMLInputElement;
         UI.direction.x = sizeInput.valueAsNumber;
-        UILightBufferChanged.direction = true;
+        UIFlags.direction = true;
     });
     document.getElementById('diry')?.addEventListener('input', () => {
         const sizeInput = document.getElementById('diry') as HTMLInputElement;
         UI.direction.y = sizeInput.valueAsNumber;
-        UILightBufferChanged.direction = true;
+        UIFlags.direction = true;
     });
     document.getElementById('dirz')?.addEventListener('input', () => {
         const sizeInput = document.getElementById('dirz') as HTMLInputElement;
         UI.direction.z = sizeInput.valueAsNumber;
-        UILightBufferChanged.direction = true;
+        UIFlags.direction = true;
     });
 
     // bias
     document.getElementById('biasValue')?.addEventListener('change', () => {
         const sizeInput = document.getElementById('biasValue') as HTMLInputElement;
         UI.biasValue = sizeInput.valueAsNumber;
-        UIConfigChanged.configChanged = true;
+        UIFlags.configChanged = true;
     });
 
     // lambda
