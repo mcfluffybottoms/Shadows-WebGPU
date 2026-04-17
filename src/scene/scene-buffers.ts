@@ -119,6 +119,7 @@ export function fillSceneBuffers(
             const normalMatrix = modelMatrix.clone().invert().transpose();
             modelMatrixArray.set(modelMatrix.toArray(), i * 64);
             modelMatrixArray.set(normalMatrix.toArray(), i * 64 + 16);
+            modelMatrixArray[i * 64 + 16 + 16 + 1] = entities[i].id;
         }
         gpu.device.queue.writeBuffer(
             objectBuffer,

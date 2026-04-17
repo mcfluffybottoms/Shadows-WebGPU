@@ -12,7 +12,8 @@ export enum CameraType {
 
 export type CameraConfig = {
   camera: THREE.OrthographicCamera | THREE.PerspectiveCamera;
-  controls: OrbitControls
+  controls: OrbitControls;
+  lastMatrix: THREE.Matrix4 
 }
 
 export function addCamera(canvas: HTMLCanvasElement, type: CameraType): THREE.OrthographicCamera | THREE.PerspectiveCamera {
@@ -148,4 +149,17 @@ export function getProjMatrix(camera: THREE.OrthographicCamera | THREE.Perspecti
     }
 
     return projMatrix;
+}
+
+
+// add detect camera changes event listener
+
+export function isCameraChanged(mainConfig: CameraConfig): boolean {
+    const changed = !mainConfig.lastMatrix.equals(mainConfig.camera.matrixWorldInverse);
+    
+    if (changed) {
+        mainConfig.lastMatrix.copy(mainConfig.camera.matrixWorldInverse);
+    }
+    
+    return changed;
 }

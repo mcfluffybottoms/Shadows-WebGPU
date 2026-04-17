@@ -49,7 +49,7 @@ function createEntityBindGroups(
                     resource: {
                         buffer: objectBuffer,
                         offset: i * 256,
-                        size: 64,
+                        size: 144,
                     }
                 },
                 {
@@ -168,7 +168,6 @@ export async function depthPass(
             const { mesh } = entity_rc;
             const group = entityBindGroups[j];
             depthPass.setBindGroup(0, group);
-
             depthPass.setVertexBuffer(0, mesh.vertexBuffer);
             if (mesh.indexBuffer) {
                 depthPass.setIndexBuffer(mesh.indexBuffer, "uint16");
@@ -176,6 +175,7 @@ export async function depthPass(
             } else {
                 depthPass.draw(mesh.vertexCount);
             }
+            
         }
 
         depthPass.end();

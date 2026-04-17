@@ -42,7 +42,7 @@ function createEntityBindGroups(
                     resource: {
                         buffer: objectBuffer,
                         offset: i * 256,
-                        size: 128,
+                        size: 144,
                     }
                 },
                 {
@@ -202,7 +202,6 @@ export async function RenderPass(
         } else {
             renderPass.draw(mesh.vertexCount);
         }
-
     }
     renderPass.end();
 }

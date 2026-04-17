@@ -7,6 +7,8 @@ struct Vertex {
 };
 struct ObjectUniforms {
     modelMatrix : mat4x4<f32>,
+    normalMatrix: mat4x4<f32>,
+    objectId: i32
 };
 struct Config {
     shadowMapOn: u32,

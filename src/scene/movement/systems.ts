@@ -36,7 +36,7 @@ export class DynamicSystem {
       component.position = new THREE.Vector3(event.value.point.x, 0, event.value.point.y);
       component.rotation.z = event.value.angle;
       component.scale = new THREE.Vector3(0.05, 0.05, 0.05);
-      component.modelMatrix = getModelMatrix(component);
+      component.modelMatrix = getModelMatrix(component.position, component.rotation, component.scale);
 
       
     }
