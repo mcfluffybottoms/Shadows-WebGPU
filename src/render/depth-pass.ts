@@ -166,8 +166,6 @@ export async function depthPass(
         depthMap = resources.dynamicDepthMap;
     }
 
-    if (!entities.length) return;
-
     // begin render pass
     for (let i = 0; i < numOfCascades; ++i) {
         const depthPass = encoder.beginRenderPass({

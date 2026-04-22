@@ -131,7 +131,10 @@ export function getModelBuffersFromTHREEMesh(
 export function getModelBuffers(
     gpu: WebGPUData,
     group: THREE.Group,
-    type: modelType
+    type: modelType,
+    pos?: THREE.Vector3,
+    quat?: THREE.Quaternion,
+    scale?: THREE.Vector3,
 ) {
     const entities: Entity[] = [];
 
@@ -140,10 +143,11 @@ export function getModelBuffers(
             const mesh = getModelBuffersFromTHREEMesh(gpu, obj as THREE.Mesh);
     
             const modelMatrix = obj.matrixWorld;
-            const pos = new THREE.Vector3();
-            const quat = new THREE.Quaternion();
-            const scale = new THREE.Vector3();
+            pos = pos || new THREE.Vector3()
+            quat = quat || new THREE.Quaternion();
+            scale = scale || new THREE.Vector3();
             obj.matrixWorld.decompose(pos, quat, scale);
+            console.log(pos, quat, scale)
             entities.push(
                 addEntity(mesh, modelMatrix, type, pos, new THREE.Euler().setFromQuaternion(quat), scale)
             );

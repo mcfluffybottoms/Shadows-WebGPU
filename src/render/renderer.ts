@@ -48,7 +48,7 @@ import {
     UIConfig,
     UIFlags,
 } from '../UI/UI-flags-types';
-import { parsePathFile, Path } from '../scene/movement/path';
+import { Circle, Path, TestScenePath } from '../scene/movement/path';
 
 export type RenderInfo = {
     // device config
@@ -101,26 +101,35 @@ async function createTestScene(
     staticEntities.push(plane);
 
     let dynamicEntities = []
+    const paths: Path[] = []
+
     // add car
     const car = await loadAndAddObject('/assets/moped.glb');
-    if (car) {
-        car.scale.setScalar(0.01);
-        car.position.set(0, 0, 0);
-        car.updateMatrixWorld(true);
-    } else {
-        throw new Error('NO CAR!');
+    const y = -0.1
+    const carPath = TestScenePath();
+    for(let i = 0; i < 5; i += 1) {
+        //if(!carM) break;
+        let p = i % carPath.length;
+        const pos = new THREE.Vector3(carPath[p].x, y, carPath[p].y);
+        //let car: THREE.Group<THREE.Object3DEventMap> = new THREE.Group();
+        //car.copy(carM);
+        if (car) {
+            car.scale.setScalar(0.01);
+            car.position.set(pos.x, pos.y, pos.z);
+            car.updateMatrixWorld(true);
+        } else {
+            throw new Error('NO CAR!');
+        }
+        const carMesh = getModelBuffers(
+            gpu,
+            car,
+            modelType.DYNAMIC
+        );
+        dynamicEntities.push(carMesh[0]);
+        const path = new Path(carMesh[0], carPath, p + 1, pos, 0, 0.1);
+        paths.push(path);
     }
 
-    const carMesh = getModelBuffers(
-        gpu,
-        car,
-        modelType.DYNAMIC
-    );
-    dynamicEntities.push(carMesh[0]);
-
-    const paths = [
-        new Path(carMesh[0], parsePathFile(''), new THREE.Vector3(0, 0, 0), 0),
-    ];
 
     return { staticEntities, dynamicEntities, light, paths, cameraConfig: mainConfig };
 }
@@ -166,7 +175,7 @@ async function createDynamicTestScene(
     dynamicEntities.push(carMesh[0]);
 
     const paths = [
-        new Path(carMesh[0], parsePathFile(''), new THREE.Vector3(0, 0, 0), 0),
+        new Path(carMesh[0], Circle(), new THREE.Vector3(0, 0, 0), 0, 0.1),
     ];
 
     return { staticEntities, dynamicEntities, light, paths, cameraConfig: mainConfig };

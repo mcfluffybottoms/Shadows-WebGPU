@@ -9,7 +9,7 @@ type Point = {
 
 
 // loader
-export function parsePathFile(fileLocation: string) : Point[] {
+export function Circle() : Point[] {
     return [
         {x: 10.000, y: 0.000},
         {x: 9.980, y: 0.628},
@@ -114,24 +114,44 @@ export function parsePathFile(fileLocation: string) : Point[] {
     ];
 }
 
+export function TestScenePath() : Point[] {
+    let path = [
+        {x: 0.8, y: -0.37},
+        {x: 1.07, y: 0.02},
+        {x: 1.66, y: 0.2},
+        {x: 2.06, y: 0.76},
+        {x: 1.58, y: 1.53},
+        {x: 0.29, y: 1.91},
+        {x: -0.69, y: 1.95},
+        {x: -0.98, y: 1.17},
+        {x: -1.42, y: 0.51},
+        {x: -1.77, y: 0.09},
+        {x: -2.27, y: -0.62},
+        {x: -1.38, y: -1.32},
+        {x: -0.58, y: -1.84}
+    ];
+
+    return path.map(p => ({x: p.x * 10, y: -1 * p.y * 10}));
+}
+
 export class Path {
-    constructor(entity: Entity, path: Point[], currentPosition: Point, currentRotation: number) {
+    constructor(entity: Entity, path: Point[], pointID: number, currentPosition: Point, currentRotation: number, speed: number) {
         this.path = path;
-        this.pointID = 0;
+        this.pointID = pointID;
+        this.speed = speed;
         this.entity = entity;
         this.currentPosition = currentPosition;
         this.currentRotation = currentRotation;
     }
 
-    public move(deltaTime: number = 1, speed: number = 100) {
-       
+    public move(deltaTime: number = 1) {
         const targetPoint = this.path[this.pointID];
         const distanceToTarget = Math.hypot(
             targetPoint.x - this.currentPosition.x,
             targetPoint.y - this.currentPosition.y
         );
         
-        const stepDistance = Math.min(distanceToTarget, speed * deltaTime);
+        const stepDistance = Math.min(distanceToTarget, this.speed * deltaTime);
         const t = distanceToTarget === 0 ? 0 : stepDistance / distanceToTarget;
         
         this.currentPosition = Path.lerp(this.currentPosition, targetPoint, t);
@@ -172,5 +192,6 @@ export class Path {
     currentPosition: Point;
     currentRotation: number;
     pointID: number;
+    speed: number;
     entity: Entity;
 }
