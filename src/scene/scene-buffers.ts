@@ -1,14 +1,16 @@
 import * as THREE from "three/webgpu";
-import { ComponentsMap, Scene } from "./scene-types";
+import { ComponentsMap, Entity, Scene } from "./scene-types";
 import { getVP } from "../utils/camera-utils";
 import { WebGPUData } from "../utils/webgpu-data";
+import { Split } from "./light-types";
 
 export type SceneBuffers = {
   cameraBuffer: GPUBuffer;
   lightBuffer: GPUBuffer;
   snatchedLightBuffer: GPUBuffer;
   lightBufferOptions: GPUBuffer;
-  objectBuffer: GPUBuffer;
+  staticObjectBuffer: GPUBuffer;
+  dynamicObjectBuffer: GPUBuffer;
 };
 
 const OFFSET = 64 * Float32Array.BYTES_PER_ELEMENT;
@@ -18,7 +20,7 @@ export function createSceneBuffers(
     gpu: WebGPUData,
     scene: Scene
 ) : SceneBuffers {
-    const { entities } = scene;
+    const { staticEntities, dynamicEntities } = scene;
 
     const cameraBuffer = gpu.device.createBuffer({
         size: (16 + 16 + 4) * Float32Array.BYTES_PER_ELEMENT,
@@ -40,8 +42,13 @@ export function createSceneBuffers(
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         label: "lightBufferOptions-shadowPass"
     });
-    const objectBuffer = gpu.device.createBuffer({
-        size: OFFSET * entities.length,
+    const staticObjectBuffer = gpu.device.createBuffer({
+        size: OFFSET * staticEntities.length,
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+        label: "objectBuffer-shadowPass"
+    }); // make it much smaller
+    const dynamicObjectBuffer = gpu.device.createBuffer({
+        size: OFFSET * dynamicEntities.length,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         label: "objectBuffer-shadowPass"
     }); // make it much smaller
@@ -50,7 +57,8 @@ export function createSceneBuffers(
         cameraBuffer,
         lightBuffer,
         snatchedLightBuffer,
-        objectBuffer,
+        staticObjectBuffer,
+        dynamicObjectBuffer,
         lightBufferOptions
     };
 }
@@ -58,7 +66,8 @@ export function createSceneBuffers(
 type bufferToFill = {
     camera: boolean,
     light: boolean,
-    object: boolean
+    staticObj: boolean,
+    dynamicObj: boolean
 }
 
 export function fillSceneBuffers(
@@ -67,10 +76,12 @@ export function fillSceneBuffers(
     scene: Scene,
     camera: THREE.OrthographicCamera | THREE.PerspectiveCamera,
     numOfCascades: number, 
+    lightViewProjMatrix: THREE.Matrix4[],
+    lightSplits: Split[],
     flags: bufferToFill
 ) : SceneBuffers {
-    const { cameraBuffer, lightBuffer, snatchedLightBuffer, objectBuffer, lightBufferOptions } = buffers;
-    const { light, entities } = scene;
+    const { cameraBuffer, lightBuffer, snatchedLightBuffer, staticObjectBuffer, dynamicObjectBuffer, lightBufferOptions } = buffers;
+    const { light, staticEntities, dynamicEntities } = scene;
 
     // camera buffer
     if(flags.camera) {
@@ -85,14 +96,14 @@ export function fillSceneBuffers(
         // light buffer
         const lightMatrixArray =  new Float32Array(64 * numOfCascades);
         for(var i = 0; i < numOfCascades; ++i) {
-            lightMatrixArray.set(new Float32Array(light.viewProjMatrix[i].elements), 64 * i);
+            lightMatrixArray.set(new Float32Array(lightViewProjMatrix[i].elements), 64 * i);
         }
         gpu.device.queue.writeBuffer(lightBuffer, 0, lightMatrixArray);
 
         // snatched light buffer
         const snatchedLightMatrixArray =  new Float32Array(16 * MAX_CASCADES);
         for(var i = 0; i < numOfCascades; ++i) {
-            snatchedLightMatrixArray.set(new Float32Array(light.viewProjMatrix[i].elements), 16 * i);
+            snatchedLightMatrixArray.set(new Float32Array(lightViewProjMatrix[i].elements), 16 * i);
         }
         gpu.device.queue.writeBuffer(snatchedLightBuffer, 0, snatchedLightMatrixArray);
 
@@ -101,13 +112,13 @@ export function fillSceneBuffers(
         lightMatrixOptionsArray.set([light.direction.x, light.direction.y, light.direction.z, 1.0], 0);
         lightMatrixOptionsArray.set([light.direction.x, light.direction.y, light.direction.z, 1.0], 4);
         for(var i = 0; i < numOfCascades; ++i) {
-            lightMatrixOptionsArray.set(new Float32Array([light.splits[i].near, light.splits[i].far, 1.0, 1.0]), 8 + 4 * i);
+            lightMatrixOptionsArray.set(new Float32Array([lightSplits[i].near, lightSplits[i].far, 1.0, 1.0]), 8 + 4 * i);
         }
         gpu.device.queue.writeBuffer(lightBufferOptions, 0, lightMatrixOptionsArray);
     }
 
-    if(flags.object) {
-        // object buffers
+    // object buffers
+    const writeToObjectBuffer = (entities: Entity[], objectBuffer: GPUBuffer) => {
         const modelMatrixArray =  new Float32Array(entities.length * 64);
         for (let i = 0; i < entities.length; i++) {
             const entity_rc = ComponentsMap.get(entities[i])?.ModelComponent;
@@ -128,11 +139,20 @@ export function fillSceneBuffers(
         );
     }
 
+    if(flags.staticObj) {
+        writeToObjectBuffer(staticEntities, staticObjectBuffer);
+    }
+
+    if(flags.dynamicObj) {
+        writeToObjectBuffer(dynamicEntities, dynamicObjectBuffer);
+    }
+
     return {
         snatchedLightBuffer,
         cameraBuffer,
         lightBuffer,
-        objectBuffer,
+        staticObjectBuffer,
+        dynamicObjectBuffer,
         lightBufferOptions
     };
 }

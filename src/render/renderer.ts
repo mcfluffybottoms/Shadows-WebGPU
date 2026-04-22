@@ -44,6 +44,7 @@ import { modelType, Scene } from '../scene/scene-types';
 import {
     cameraWhat,
     renderWhat,
+    UIChanged,
     UIConfig,
     UIFlags,
 } from '../UI/UI-flags-types';
@@ -84,25 +85,26 @@ async function createTestScene(
         throw new Error('NO OBJ!');
     }
 
-    let entities = getModelBuffers(gpu, obj, modelType.STATIC);
-    if (!entities) {
+    let staticEntities = getModelBuffers(gpu, obj, modelType.STATIC);
+    if (!staticEntities) {
         console.warn('Models were not loaded.');
-        entities = [];
+        staticEntities = [];
     }
 
     const plane = createEntityFromGeometry(
         gpu,
         new THREE.BoxGeometry(50, 45, 1),
         modelType.STATIC,
-        new THREE.Vector3(0, 0, 0),
+        new THREE.Vector3(0, -0.5, 0),
         new THREE.Euler(-Math.PI / 2, undefined, undefined)
     );
-    entities.push(plane);
+    staticEntities.push(plane);
 
+    let dynamicEntities = []
     // add car
     const car = await loadAndAddObject('/assets/moped.glb');
     if (car) {
-        car.scale.setScalar(0.05);
+        car.scale.setScalar(0.01);
         car.position.set(0, 0, 0);
         car.updateMatrixWorld(true);
     } else {
@@ -114,13 +116,13 @@ async function createTestScene(
         car,
         modelType.DYNAMIC
     );
-    //entities.push(carMesh[0]);
+    dynamicEntities.push(carMesh[0]);
 
     const paths = [
         new Path(carMesh[0], parsePathFile(''), new THREE.Vector3(0, 0, 0), 0),
     ];
 
-    return { entities, light, paths, cameraConfig: mainConfig };
+    return { staticEntities, dynamicEntities, light, paths, cameraConfig: mainConfig };
 }
 
 async function createDynamicTestScene(
@@ -134,7 +136,8 @@ async function createDynamicTestScene(
     light.direction = direction;
 
     // add object entities
-    let entities = [];
+    let staticEntities = [];
+    let dynamicEntities = [];
 
     const plane = createEntityFromGeometry(
         gpu,
@@ -143,7 +146,7 @@ async function createDynamicTestScene(
         new THREE.Vector3(0, 0, 0),
         new THREE.Euler(-Math.PI / 2, undefined, undefined)
     );
-    entities.push(plane);
+    staticEntities.push(plane);
 
     // add car
     const car = await loadAndAddObject('/assets/moped.glb');
@@ -160,13 +163,13 @@ async function createDynamicTestScene(
         car,
         modelType.DYNAMIC
     );
-    //entities.push(carMesh[0]);
+    dynamicEntities.push(carMesh[0]);
 
     const paths = [
         new Path(carMesh[0], parsePathFile(''), new THREE.Vector3(0, 0, 0), 0),
     ];
 
-    return { entities, light, paths, cameraConfig: mainConfig };
+    return { staticEntities, dynamicEntities, light, paths, cameraConfig: mainConfig };
 }
 
 
@@ -193,6 +196,14 @@ export async function initRender(
         UI.numOfCascades
     );
 
+    // load view proj matrices
+    const { viewProjMatrix, splits } = scene.light.getNewViewProjMatrix(
+        scene.cameraConfig.camera,
+        UI.numOfCascades,
+        UI.depthPassSize,
+        UI.lambda
+    );
+
     // create and load scene buffers
     const sceneBuffers = createSceneBuffers(gpu, scene);
     const configBuffer = createConfigBuffers(gpu);
@@ -214,7 +225,9 @@ export async function initRender(
         scene,
         mainConfig.camera,
         UI.numOfCascades,
-        { camera: true, light: true, object: true }
+        viewProjMatrix,
+        splits,
+        { camera: true, light: true, staticObj: true, dynamicObj: true }
     );
 
     // create resources
@@ -222,7 +235,8 @@ export async function initRender(
         gpu,
         scene,
         sceneBuffers.lightBuffer,
-        sceneBuffers.objectBuffer,
+        sceneBuffers.staticObjectBuffer,
+        sceneBuffers.dynamicObjectBuffer,
         configBuffer,
         UI.depthPassSize,
         UI.numOfCascades
@@ -230,13 +244,14 @@ export async function initRender(
     var renderPassResources = await initRenderPass(
         gpu,
         scene,
-        depthPassResources.depthMap,
+        depthPassResources.staticDepthMap,
+        depthPassResources.dynamicDepthMap,
         sceneBuffers,
         configBuffer
     );
     var renderDepthPassResources = await initRenderDepthPass(
         gpu,
-        depthPassResources.depthMap,
+        depthPassResources.staticDepthMap,
         UI.depthMapCascade
     );
 
@@ -261,6 +276,7 @@ export async function updateRenderFromUI(
     UI: UIConfig,
     flags: UIFlags
 ) {
+    const changed = UIChanged(flags);
     //load config
     if (flags.configChanged) {
         fillConfigBuffers(
@@ -310,12 +326,6 @@ export async function updateRenderFromUI(
         renderData.scene.light.direction = UI.direction;
         flags.direction = false;
     }
-    renderData.scene.light.update(
-        renderData.scene.cameraConfig.camera,
-        UI.numOfCascades,
-        UI.depthPassSize,
-        UI.lambda
-    );
 
     // reinit
     if (flags.depthPassSize || flags.numOfCascades) {
@@ -329,7 +339,8 @@ export async function updateRenderFromUI(
             renderData.gpu,
             renderData.renderPassResources,
             renderData.scene,
-            renderData.depthPassResources.depthMap,
+            renderData.depthPassResources.staticDepthMap,
+            renderData.depthPassResources.dynamicDepthMap,
             renderData.sceneBuffers
         );
         flags.depthPassSize = false;
@@ -340,11 +351,13 @@ export async function updateRenderFromUI(
     if (flags.depthMapCascade) {
         renderData.renderDepthPassResources = await initRenderDepthPass(
             renderData.gpu,
-            renderData.depthPassResources.depthMap,
+            renderData.depthPassResources.staticDepthMap,
             UI.depthMapCascade
         );
         flags.depthMapCascade = false;
     }
+
+    return changed;
 }
 
 export async function getMainTexture(
@@ -366,11 +379,18 @@ export async function renderFrame(
     UI: UIConfig,
     flags: UIFlags
 ) {
-    updateRenderFromUI(renderData, UI, flags);
+    const uiChanged = await updateRenderFromUI(renderData, UI, flags);
 
     const encoder = renderData.gpu.device.createCommandEncoder();
 
     const cameraChanged = isCameraChanged(renderData.scene.cameraConfig);
+
+    const { viewProjMatrix, splits } = renderData.scene.light.getNewViewProjMatrix(
+        renderData.scene.cameraConfig.camera,
+        UI.numOfCascades,
+        UI.depthPassSize,
+        UI.lambda
+    );
 
     fillSceneBuffers(
         renderData.gpu,
@@ -378,14 +398,25 @@ export async function renderFrame(
         renderData.scene,
         renderData.scene.cameraConfig.camera,
         UI.numOfCascades,
-        { camera: cameraChanged, light: true, object: false }
+        viewProjMatrix,
+        splits,
+        { camera: cameraChanged, light: true, staticObj: false, dynamicObj: true }
     );
 
-    if(cameraChanged) await depthPass(
+    if(cameraChanged || uiChanged) await depthPass(
         renderData.depthPassResources,
         encoder,
         renderData.scene,
-        UI.numOfCascades
+        UI.numOfCascades,
+        true
+    );
+
+    await depthPass(
+        renderData.depthPassResources,
+        encoder,
+        renderData.scene,
+        UI.numOfCascades,
+        false
     );
 
     await getMainTexture(renderData, encoder, UI.renderWhat);

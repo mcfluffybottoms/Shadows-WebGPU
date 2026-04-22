@@ -1,25 +1,3 @@
-struct LightUniforms {
-    viewProjMatrix: mat4x4<f32>,
-};
-struct Vertex {
-    @location(0) position: vec3<f32>,
-    @location(1) normal: vec3<f32>,
-};
-struct ObjectUniforms {
-    modelMatrix : mat4x4<f32>,
-    normalMatrix: mat4x4<f32>,
-    objectId: i32
-};
-struct Config {
-    shadowMapOn: u32,
-    samplesPerSide: u32,
-    numOfCascades: u32,
-    biasType: u32,
-    lightOn: u32,
-    cascadeLayers: u32,
-    biasValue: f32
-};
-
 @group(0) @binding(0) var<uniform> object: ObjectUniforms;
 @group(0) @binding(1) var<uniform> config: Config;
 @group(1) @binding(0) var<uniform> light: LightUniforms;

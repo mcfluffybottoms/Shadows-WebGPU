@@ -38,7 +38,7 @@ export let UI: UIConfig = {
     //light buffer
     direction: new THREE.Vector3(0.5, -0.5, 0.5),
     //reinit
-    depthPassSize: 1024,
+    depthPassSize: 2048,
     numOfCascades: 4,
     //debug depthmap and shadows
     depthMapCascade: 1,
@@ -51,7 +51,7 @@ export let UI: UIConfig = {
     numberOfSamples: 4,
     biasType: 2,
     biasValue: 0.001,
-    lambda: 0.5,
+    lambda: 0.7,
 };
 
 export type UIFlags = {
@@ -76,3 +76,7 @@ export let UIFlags: UIFlags = {
     // UIConfigChanged
     configChanged: true
 };
+
+export function UIChanged(flags: UIFlags) {
+    return flags.depthPassSize || flags.numOfCascades || flags.depthMapCascade || flags.direction || flags.cameraType || flags.configChanged;
+}

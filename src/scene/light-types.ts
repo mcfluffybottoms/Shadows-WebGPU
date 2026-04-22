@@ -2,65 +2,28 @@ import * as THREE from "three/webgpu";
 
 import { getProjMatrix, getVPraw } from "../utils/camera-utils";
 
-export interface LightSource {
-    projMatrix: THREE.Matrix4;
-    viewMatrix: THREE.Matrix4;
-    viewProjMatrix?: THREE.Matrix4[];
-    update(camera: THREE.OrthographicCamera | THREE.PerspectiveCamera, zNear: number, zFar: number, numOfCascades: number) : void;
-};
-
 export type Split = {
     near: number,
     far: number
 }
 
-const _origin = new THREE.Vector3( 0, 0, 0 );
-
-export class DirectionalLight implements LightSource {
-    private numOfCascades: number;
+export class DirectionalLight {
     private upVector: THREE.Vector3;
     direction: THREE.Vector3;
-    projMatrix: THREE.Matrix4;
-    splits: Split[];
-    viewMatrix: THREE.Matrix4;
-    viewProjMatrix: THREE.Matrix4[];
 
     constructor(camera: THREE.OrthographicCamera | THREE.PerspectiveCamera, numOfCascades: number) {
         this.upVector = new THREE.Vector3(0, 1, 0);
-        this.projMatrix = new THREE.Matrix4;
-        this.viewMatrix = new THREE.Matrix4;
-        
         this.direction = new THREE.Vector3(1.0, 0.5, -0.5).normalize();
-        this.splits = [];
-
-        this.numOfCascades = 0;
-        this.viewProjMatrix = [];
-        this.setViewProjMatrixSize(0);
-    
-        this.update(camera, numOfCascades, 1024, 0.5);
-    }
-
-    private setViewProjMatrixSize(numOfCascades: number) {
-        if(this.numOfCascades == numOfCascades) return;
-        this.numOfCascades = numOfCascades;
-        this.viewProjMatrix = [];
-        for(var i = 0; i < numOfCascades; ++i) {
-            this.viewProjMatrix.push(new THREE.Matrix4);
-        }
-        this.splits = [];
-        for(var i = 0; i < numOfCascades; ++i) {
-            this.splits.push({
-                near: 1,
-                far: 1
-            });
-        }
     }
 
     private updateViewProjMatrix(
         camera: THREE.OrthographicCamera | THREE.PerspectiveCamera, 
         corners: THREE.Vector4[], 
         shadowMapResolution: number
-    ) {       
+    ) {
+        let viewMatrix = new THREE.Matrix4;
+        let projMatrix = new THREE.Matrix4;
+
         // texel snapping
         let texelWidth: number;
         let texelHeight: number;
@@ -75,17 +38,16 @@ export class DirectionalLight implements LightSource {
             texelHeight = farHeight / shadowMapResolution;
         }
 
-
         // get view matrix
         const center = getFrustumCenter(corners);
         const radius = getFrustumRadius(corners, center) + 20;
         const viewPos = center.clone().add(this.direction.clone());
-        this.viewMatrix.lookAt(viewPos, center, this.upVector);
-        center.applyMatrix4(this.viewMatrix);
+        viewMatrix.lookAt(viewPos, center, this.upVector);
+        center.applyMatrix4(viewMatrix);
 
         const box = corners.reduce(
             (box, corner) => {
-                const view = corner.clone().applyMatrix4(this.viewMatrix);
+                const view = corner.clone().applyMatrix4(viewMatrix);
                 return {
                     min: {
                         x: Math.min(box.min.x, view.x),
@@ -110,29 +72,48 @@ export class DirectionalLight implements LightSource {
         box.max.x = Math.floor(box.max.x / texelWidth) * texelWidth;
         box.max.y = Math.floor(box.max.y / texelHeight) * texelHeight;
 
-        this.projMatrix = this.projMatrix.makeOrthographic(
+        projMatrix = projMatrix.makeOrthographic(
             box.min.x, box.max.x,
             box.max.y, box.min.y,
             box.min.z - radius, box.max.z + radius
         );
+
+        return { viewMatrix, projMatrix }
     }
 
-    public update(camera: THREE.OrthographicCamera | THREE.PerspectiveCamera, numOfCascades: number, shadowMapResolution: number, lambda: number) {
-        this.setViewProjMatrixSize(numOfCascades);
+    /*
+        GET VIEW PROJECTION MATRIX FOR AN OBJECT
+    */
+    public getNewViewProjMatrix(camera: THREE.OrthographicCamera | THREE.PerspectiveCamera, numOfCascades: number, shadowMapResolution: number, lambda: number) {
+        let viewProjMatrix = [];
+        let splits = [];
+        for(var i = 0; i < numOfCascades; ++i) {
+            viewProjMatrix.push(new THREE.Matrix4);
+        }
+        for(var i = 0; i < numOfCascades; ++i) {
+            splits.push({
+                near: 1,
+                far: 1
+            });
+        }
 
         for(var i = 0; i < numOfCascades; ++i) {
             const zFar = getSplit(camera.near, camera.far, i, numOfCascades, lambda);
-            this.splits[i] = {
+            splits[i] = {
                 near: camera.near,
                 far: zFar
             };
+
             camera.updateMatrixWorld();
-            const projMatrix = getProjMatrix(camera, camera.near, zFar);
-            const corners = getFrustumCorners(projMatrix, camera.matrixWorldInverse);
-            this.updateViewProjMatrix(camera, corners, shadowMapResolution);
-            this.viewProjMatrix[i] = getVPraw(this.projMatrix, this.viewMatrix);
+            const cameraProjMatrix = getProjMatrix(camera, camera.near, zFar);
+            const corners = getFrustumCorners(cameraProjMatrix, camera.matrixWorldInverse);
+            const { viewMatrix, projMatrix } = this.updateViewProjMatrix(camera, corners, shadowMapResolution);
+            viewProjMatrix[i] = getVPraw(projMatrix, viewMatrix);
         }
+
+        return {viewProjMatrix, splits};
     }
+
 };
 // ------ GENERATING VP FOR CASCADED SHADOWS ------ //
 
@@ -177,4 +158,3 @@ function getSplit(near: number, far: number, cascadeNumber: number, numOfCascade
     const splitDist = lambda * log + (1 - lambda) * uniform;
     return splitDist;
 }
-

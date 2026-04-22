@@ -2,69 +2,83 @@ import * as THREE from "three/webgpu";
 import { WebGPUData } from "../utils/webgpu-data";
 import { vertexBuffers } from "../utils/loader";
 
-import depthMapVertex from '../shader/shadow-map/depthmap.wgsl?raw';
-import { ComponentsMap, Scene } from "../scene/scene-types";
+import depthMapVertexRaw from '../shader/shadow-map/depthmap.wgsl?raw';
+import { ComponentsMap, Entity, Scene } from "../scene/scene-types";
 import { ConfigBuffers } from "../config/config-buffers";
+import { importShaderCode } from "../utils/import-shader-code";
+
+const depthMapVertex = await importShaderCode(depthMapVertexRaw);
 
 export type DepthMap = {
     depthTexture: GPUTexture,
-    depthTextureSize: number,
+    depthTextureWidth: number,
+    depthTextureHeight: number,
     numOfTextures: number
 };
 
 export function createDepthMap(
     gpu: WebGPUData,
-    depthTextureSize: number,
+    depthTextureWidth: number,
+    depthTextureHeight: number,
     numOfTextures: number
 ): DepthMap {
     const depthTexture = gpu.device.createTexture({
-        size: [depthTextureSize, depthTextureSize, numOfTextures],
+        size: [depthTextureWidth, depthTextureHeight, numOfTextures],
         usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
         format: 'depth32float',
     });
-    return { depthTextureSize, depthTexture, numOfTextures };
+    return { depthTextureWidth, depthTextureHeight, depthTexture, numOfTextures };
 }
 
 // keep depth map here
 export interface DepthPassResources {
     pipeline: GPURenderPipeline;
     lightBindGroups: GPUBindGroup[];
-    entityBindGroups: GPUBindGroup[];
-    depthMap: DepthMap
+    staticEntityBindGroups: GPUBindGroup[];
+    dynamicEntityBindGroups: GPUBindGroup[];
+    dynamicDepthMap: DepthMap;
+    staticDepthMap: DepthMap;
 };
 
 function createEntityBindGroups(
     gpu: WebGPUData,
     pipeline: GPURenderPipeline,
-    objectBuffer: GPUBuffer,
+    staticObjectBuffer: GPUBuffer, 
+    dynamicObjectBuffer: GPUBuffer,
     configBuffers: ConfigBuffers,
-    scene: Scene) {
-    const entityBindGroups = scene.entities.map((_, i) =>
-        gpu.device.createBindGroup({
-            label: "depthpass-entityBindGroups" + i,
-            layout: pipeline.getBindGroupLayout(0),
-            entries: [
-                {
-                    binding: 0,
-                    resource: {
-                        buffer: objectBuffer,
-                        offset: i * 256,
-                        size: 144,
+    scene: Scene
+) {
+    const entityBindGroups = (entities: Entity[], objectBuffer: GPUBuffer) => {
+        return entities.map((_, i) =>
+            gpu.device.createBindGroup({
+                label: "depthpass-entityBindGroups" + i,
+                layout: pipeline.getBindGroupLayout(0),
+                entries: [
+                    {
+                        binding: 0,
+                        resource: {
+                            buffer: objectBuffer,
+                            offset: i * 256,
+                            size: 144,
+                        }
+                    },
+                    {
+                        binding: 1,
+                        resource: {
+                            buffer: configBuffers.configBuffer,
+                            offset: 0,
+                            size: configBuffers.configBufferSize,
+                        }
                     }
-                },
-                {
-                    binding: 1,
-                    resource: {
-                        buffer: configBuffers.configBuffer,
-                        offset: 0,
-                        size: configBuffers.configBufferSize,
-                    }
-                }
-            ]
-        })
-    );
+                ]
+            })
+        );
+    }
 
-    return entityBindGroups;
+    const staticEntityBindGroups = entityBindGroups(scene.staticEntities, staticObjectBuffer);
+    const dynamicEntityBindGroups = entityBindGroups(scene.dynamicEntities, dynamicObjectBuffer);
+
+    return { staticEntityBindGroups, dynamicEntityBindGroups };
 }
 
 function createLightBindGroups(
@@ -94,16 +108,19 @@ export async function initDepthPass(
     gpu: WebGPUData,
     scene: Scene,
     cameraBuffer: GPUBuffer,
-    objectBuffer: GPUBuffer,
+    staticObjectBuffer: GPUBuffer, 
+    dynamicObjectBuffer: GPUBuffer,
     configBuffers: ConfigBuffers,
     depthPassSize: number,
     numOfCascades: number
 ): Promise<DepthPassResources> {
-    const depthMap = createDepthMap(gpu, depthPassSize, numOfCascades);
+    const staticDepthMap = createDepthMap(gpu, depthPassSize, depthPassSize, numOfCascades);
+    const dynamicDepthMap = createDepthMap(gpu, depthPassSize, depthPassSize, numOfCascades);
+
     const pipeline = gpu.device.createRenderPipeline({
         label: "DepthPass",
         vertex: {
-            module: gpu.device.createShaderModule({ code: depthMapVertex }),
+            module: gpu.device.createShaderModule({ code: depthMapVertex, label: "depthMapVertex" }),
             entryPoint: 'main',
             buffers: vertexBuffers
         },
@@ -121,20 +138,35 @@ export async function initDepthPass(
     });
 
     const lightBindGroups = createLightBindGroups(gpu, pipeline, cameraBuffer, numOfCascades);
-    const entityBindGroups = createEntityBindGroups(gpu, pipeline, objectBuffer, configBuffers, scene);
+    const { staticEntityBindGroups, dynamicEntityBindGroups } = createEntityBindGroups(gpu, pipeline, staticObjectBuffer, dynamicObjectBuffer, configBuffers, scene);
 
-    return { pipeline, lightBindGroups, entityBindGroups, depthMap };
+    return { pipeline, lightBindGroups, staticEntityBindGroups, dynamicEntityBindGroups, dynamicDepthMap, staticDepthMap };
 }
 
 export async function depthPass(
     resources: DepthPassResources,
     encoder: GPUCommandEncoder,
     scene: Scene,
-    numOfCascades: number
+    numOfCascades: number,
+    isStatic: boolean
 ) {
     // get uniform values for depth map render pipeline
-    const { pipeline, lightBindGroups, entityBindGroups, depthMap } = resources;
-    const { entities } = scene;
+    const { pipeline, lightBindGroups } = resources;
+
+    let entities: Entity[];
+    let entityBindGroups: GPUBindGroup[];
+    let depthMap: DepthMap;
+    if (isStatic) {
+        entities = scene.staticEntities;
+        entityBindGroups = resources.staticEntityBindGroups;
+        depthMap = resources.staticDepthMap;
+    } else {
+        entities = scene.dynamicEntities;
+        entityBindGroups = resources.dynamicEntityBindGroups;
+        depthMap = resources.dynamicDepthMap;
+    }
+
+    if (!entities.length) return;
 
     // begin render pass
     for (let i = 0; i < numOfCascades; ++i) {
@@ -156,7 +188,6 @@ export async function depthPass(
 
         const lightGroup = lightBindGroups[i];
 
-        //depthPass.setViewport(0, 0, d.depthTextureSize, d.depthTextureSize, 0, 1);
         depthPass.setPipeline(pipeline);
         depthPass.setBindGroup(1, lightGroup);
         for (let j = 0; j < entities.length; ++j) {
@@ -206,10 +237,13 @@ export function onDepthMapSceneChange(
     gpu: WebGPUData,
     resources: DepthPassResources,
     scene: Scene,
-    objectBuffer: GPUBuffer,
+    staticObjectBuffer: GPUBuffer, 
+    dynamicObjectBuffer: GPUBuffer,
     configBuffers: ConfigBuffers,
 ) {
-    resources.entityBindGroups = createEntityBindGroups(gpu, resources.pipeline, objectBuffer, configBuffers, scene);
+    const { staticEntityBindGroups, dynamicEntityBindGroups } = createEntityBindGroups(gpu, resources.pipeline, staticObjectBuffer, dynamicObjectBuffer, configBuffers, scene);
+    resources.staticEntityBindGroups = staticEntityBindGroups;
+    resources.dynamicEntityBindGroups = dynamicEntityBindGroups;
 }
 
 /*
@@ -223,5 +257,6 @@ export function onDepthMapChange(
     depthPassSize: number,
     numOfCascades: number,
 ) {
-    resources.depthMap = createDepthMap(gpu, depthPassSize, numOfCascades);
+    resources.staticDepthMap = createDepthMap(gpu, depthPassSize, depthPassSize, numOfCascades);
+    resources.dynamicDepthMap = createDepthMap(gpu, depthPassSize, depthPassSize, numOfCascades);
 }

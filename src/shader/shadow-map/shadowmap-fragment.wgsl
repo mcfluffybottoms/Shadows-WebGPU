@@ -1,28 +1,7 @@
-const MAX_CASCADES = 8;
-
 // ----- SCENE SETUP ----- // 
-struct LightUniforms {
-    viewProjMatrix: array<mat4x4<f32>, MAX_CASCADES>,
-};
-struct LightOptionsUniforms {
-    pos: vec4f,
-    dir: vec4f,
-    splits: array<vec4f, MAX_CASCADES>
-};
-struct Config {
-    shadowMapOn: u32,
-    samplesPerSide: u32,
-    numOfCascades: u32,
-    biasType: u32,
-    lightOn: u32,
-    cascadeLayers: u32,
-    biasValue: f32,
-    lightAmbient: f32
-};
-
-
-@group(0) @binding(2) var depthTex: texture_depth_2d_array;
-@group(0) @binding(3) var depthSampler: sampler_comparison;
+@group(0) @binding(2) var staticDepthTex: texture_depth_2d_array;
+@group(0) @binding(3) var dynamicDepthTex: texture_depth_2d_array;
+@group(0) @binding(4) var depthSampler: sampler_comparison;
 // // ----- SCENE SETUP ----- // 
 
 struct FragmentIn {
@@ -31,7 +10,7 @@ struct FragmentIn {
     @location(3) clipPosZ: f32
 }
 
-@group(1) @binding(0) var<uniform> light: LightUniforms;
+@group(1) @binding(0) var<uniform> light: SnatchedLightUniforms;
 @group(1) @binding(1) var<uniform> lightOptions: LightOptionsUniforms;
 @group(1) @binding(2) var<uniform> config: Config;
 
@@ -94,8 +73,8 @@ fn shadowCalculation(in: FragmentIn, normal: vec3f, lightDir: vec3f) -> f32 {
     var bias = getBias(projCoords);
     
     // texel snapping
-    let texelSize = 1.0 / vec2f(textureDimensions(depthTex));
-    let texSize = vec2f(textureDimensions(depthTex));
+    let texelSize = 1.0 / vec2f(textureDimensions(staticDepthTex));
+    let texSize = vec2f(textureDimensions(dynamicDepthTex));
     let snappedCoords = vec2f(
         floor(projCoords.x * texSize.x) / texSize.x + texelSize.x * 0.5,
         floor(projCoords.y * texSize.y) / texSize.y + texelSize.y * 0.5
@@ -106,13 +85,22 @@ fn shadowCalculation(in: FragmentIn, normal: vec3f, lightDir: vec3f) -> f32 {
     for(var i = -1 * halfWindow; i <= halfWindow; i++) {
         for(var j = -1 * halfWindow; j <= halfWindow; j++) {
             let offset = vec2f(f32(i), f32(j)) * texelSize;
-            shadow += textureSampleCompare(
-                depthTex, 
+            let staticSample = textureSampleCompare(
+                staticDepthTex, 
                 depthSampler,
                 snappedCoords + offset,
                 cascadeId,
                 projCoords.z - bias
             );
+            let dynamicSample = textureSampleCompare(
+                dynamicDepthTex, 
+                depthSampler,
+                snappedCoords + offset,
+                cascadeId,
+                projCoords.z - bias
+            );
+
+            shadow += staticSample * dynamicSample;
         }
     }
     shadow /= f32(config.samplesPerSide) * f32(config.samplesPerSide);

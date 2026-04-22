@@ -65,10 +65,11 @@ export const ComponentsMap: Map<Entity, Components> = new Map();
 
 // TODO - add camera
 export type Scene = {
-    entities: Entity[];
     paths: Path[];
     cameraConfig: CameraConfig;
     light: DirectionalLight;
+    staticEntities: Entity[];
+    dynamicEntities: Entity[];
 };
 
 // id generator

@@ -32,10 +32,10 @@ export class DynamicSystem {
         console.log("Model Component for Entity with id " + e.id + " not found.");
         continue;
       }
-      const event = path.move(1, 0.2);
+      const event = path.move(1, 0.05);
       component.position = new THREE.Vector3(event.value.point.x, 0, event.value.point.y);
       component.rotation.z = event.value.angle;
-      component.scale = new THREE.Vector3(0.05, 0.05, 0.05);
+      component.scale = component.scale;
       component.modelMatrix = getModelMatrix(component.position, component.rotation, component.scale);
 
       

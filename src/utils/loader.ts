@@ -144,7 +144,6 @@ export function getModelBuffers(
             const quat = new THREE.Quaternion();
             const scale = new THREE.Vector3();
             obj.matrixWorld.decompose(pos, quat, scale);
-
             entities.push(
                 addEntity(mesh, modelMatrix, type, pos, new THREE.Euler().setFromQuaternion(quat), scale)
             );

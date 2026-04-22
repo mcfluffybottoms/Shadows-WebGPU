@@ -2,7 +2,6 @@ body {
     margin: 0;
     font-family: monospace;
     size: 12px;
-    pointer-events: none; 
 }
 
 select {

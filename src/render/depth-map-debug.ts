@@ -1,8 +1,12 @@
 import { WebGPUData } from "../utils/webgpu-data";
 import { DepthMap } from "./depth-pass";
 
-import debugDepthVertex from '../shader/shadow-map/debug-depth-map.wgsl?raw';
-import debugDepthFragment from '../shader/shadow-map/debug-depth-map-frag.wgsl?raw';
+import debugDepthVertexRaw from '../shader/shadow-map/debug-depth-map.wgsl?raw';
+import debugDepthFragmentRaw from '../shader/shadow-map/debug-depth-map-frag.wgsl?raw';
+import { importShaderCode } from "../utils/import-shader-code";
+
+const debugDepthVertex = importShaderCode(debugDepthVertexRaw);
+const debugDepthFragment = importShaderCode(debugDepthFragmentRaw);
 
 export type renderDepthPassResources = {
     pipeline: GPURenderPipeline;
@@ -19,11 +23,11 @@ export async function initRenderDepthPass(
     const pipeline = gpu.device.createRenderPipeline({
         label: "RenderDepthPass",
         vertex: {
-            module: gpu.device.createShaderModule({ code: debugDepthVertex }),
+            module: gpu.device.createShaderModule({ code: debugDepthVertex, label: "debugDepthVertex" }),
             entryPoint: 'main'
         },
         fragment: {
-            module: gpu.device.createShaderModule({ code: debugDepthFragment }),
+            module: gpu.device.createShaderModule({ code: debugDepthFragment, label: "debugDepthFragment" }),
             entryPoint: 'main',
             targets: [{ format: gpu.context.getCurrentTexture().format }]
         },
