@@ -9,46 +9,103 @@ import { importShaderCode } from "../utils/import-shader-code";
 
 const depthMapVertex = await importShaderCode(depthMapVertexRaw);
 
-export type DepthMap = {
-    depthTexture: GPUTexture,
-    depthTextureWidth: number,
-    depthTextureHeight: number,
-    numOfTextures: number
+export type AreaIntersectionMap = {
+    texture: GPUTexture,
+    textureWidth: number,
+    textureHeight: number,
 };
 
-export function createDepthMap(
+// grid size
+// cone angle
+
+const coneAngle = 7; // degrees
+const hemisphereRadius = 10;
+const spheresRadius = 5;
+const distance = 5;
+
+// ambient component - cosine weighted percentage hemisphere occluded
+// directional component - trace to point by direction, get  + intercestions with sphere
+// precoimpute using monte carlo for directional component -store in a texture
+
+
+/*
+    Create a texture which stores the result of
+    area intersection for directional component
+*/
+export function createPrecomputedAreaIntersection(
     gpu: WebGPUData,
-    depthTextureWidth: number,
-    depthTextureHeight: number,
-    numOfTextures: number
-): DepthMap {
-    const depthTexture = gpu.device.createTexture({
-        size: [depthTextureWidth, depthTextureHeight, numOfTextures],
+    textureWidth: number,
+    textureHeight: number
+): AreaIntersectionMap {
+    const texture = gpu.device.createTexture({
+        size: [textureWidth, textureHeight],
         usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
         format: 'depth32float',
     });
-    return { depthTextureWidth, depthTextureHeight, depthTexture, numOfTextures };
+    return { textureWidth, textureHeight, texture };
 }
 
-// keep depth map here
-export interface DepthPassResources {
+function ambientComponent(
+    sphereRadius: number,
+    distance: number
+): number {
+    return (sphereRadius / distance) * (sphereRadius / distance);
+}
+
+function dynamicComponent(
+    direction: THREE.Vector3,
+    distance: number
+): number {
+    return (sphereRadius / distance) * (sphereRadius / distance);
+}
+
+
+/*
+    Ambient Aperture Lighting -- Chris Oat, Pedro V. Sander
+*/
+function smoothstep(edge0: number, edge1: number, x: number): number {
+    const t = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)));
+    return t * t * (3 - 2 * t);
+}
+function saturate(x: number): number {
+    return Math.max(0, Math.min(1, x));
+}
+function sphericalCapIntersectionApproxCPU(
+    radius1: number,
+    radius2: number,
+    distance: number
+): number {
+    let area: number = 0;
+
+    if(distance >= radius1 + radius2) {
+        return area;
+    }
+
+    area = 6.283185308 - 6.283185308 * Math.cos(Math.min(radius1, radius2));
+
+    if(distance > Math.max(radius1, radius2) - Math.min(radius1, radius2)) {
+        const diff = Math.abs(radius1 - radius2);
+        area *= smoothstep(0.0, 1.0, 1.0-saturate((diff - diff)/(radius1 + radius2 - diff)));
+    }
+
+    return area;
+}
+
+export interface AnalyticPassResources {
     pipeline: GPURenderPipeline;
     lightBindGroups: GPUBindGroup[];
-    staticEntityBindGroups: GPUBindGroup[];
-    dynamicEntityBindGroups: GPUBindGroup[];
-    dynamicDepthMap: DepthMap;
-    staticDepthMap: DepthMap;
+    entityBindGroups: GPUBindGroup[];
+    areaIntersectionMap: AreaIntersectionMap;
 };
 
 function createEntityBindGroups(
     gpu: WebGPUData,
     pipeline: GPURenderPipeline,
-    staticObjectBuffer: GPUBuffer, 
-    dynamicObjectBuffer: GPUBuffer,
+    objectBuffer: GPUBuffer,
     configBuffers: ConfigBuffers,
     scene: Scene
-) {
-    const entityBindGroups = (entities: Entity[], objectBuffer: GPUBuffer) => {
+)  {
+    const createEntityBindGroups = (entities: Entity[], objectBuffer: GPUBuffer) => {
         return entities.map((_, i) =>
             gpu.device.createBindGroup({
                 label: "depthpass-entityBindGroups" + i,
@@ -75,10 +132,9 @@ function createEntityBindGroups(
         );
     }
 
-    const staticEntityBindGroups = entityBindGroups(scene.staticEntities, staticObjectBuffer);
-    const dynamicEntityBindGroups = entityBindGroups(scene.dynamicEntities, dynamicObjectBuffer);
+    const entityBindGroups = createEntityBindGroups(scene.staticEntities, objectBuffer);
 
-    return { staticEntityBindGroups, dynamicEntityBindGroups };
+    return entityBindGroups;
 }
 
 function createLightBindGroups(

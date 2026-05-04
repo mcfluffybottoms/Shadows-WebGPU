@@ -42,9 +42,9 @@ export let UI: UIConfig = {
     numOfCascades: 4,
     //debug depthmap and shadows
     depthMapCascade: 1,
-    cascadeLayers: true,
+    cascadeLayers: false,
     //light
-    lightOn: true,
+    lightOn: false,
     lightAmbient: 0.3,
     //shadows
     shadowMap: true,

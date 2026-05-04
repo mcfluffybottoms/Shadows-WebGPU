@@ -17,6 +17,7 @@ import {
     DepthPassResources,
     initDepthPass,
     onDepthMapChange,
+    onDepthMapLightChange,
 } from './depth-pass';
 import {
     createSceneBuffers,
@@ -40,7 +41,7 @@ import {
     loadAndAddObject,
 } from '../utils/loader';
 import { DirectionalLight } from '../scene/light-types';
-import { modelType, Scene } from '../scene/scene-types';
+import { Entity, modelType, Scene } from '../scene/scene-types';
 import {
     cameraWhat,
     renderWhat,
@@ -68,11 +69,10 @@ export type RenderInfo = {
 async function createTestScene(
     gpu: WebGPUData,
     mainConfig: CameraConfig,
-    direction: THREE.Vector3,
-    numOfCascades: number
+    direction: THREE.Vector3
 ): Promise<Scene> {
     // light source
-    const light = new DirectionalLight(mainConfig.camera, numOfCascades);
+    const light = new DirectionalLight();
     light.direction = direction;
 
     // add object entities
@@ -137,11 +137,10 @@ async function createTestScene(
 async function createDynamicTestScene(
     gpu: WebGPUData,
     mainConfig: CameraConfig,
-    direction: THREE.Vector3,
-    numOfCascades: number
+    direction: THREE.Vector3
 ): Promise<Scene> {
     // light source
-    const light = new DirectionalLight(mainConfig.camera, numOfCascades);
+    const light = new DirectionalLight();
     light.direction = direction;
 
     // add object entities
@@ -175,8 +174,62 @@ async function createDynamicTestScene(
     dynamicEntities.push(carMesh[0]);
 
     const paths = [
-        new Path(carMesh[0], Circle(), new THREE.Vector3(0, 0, 0), 0, 0.1),
+        new Path(carMesh[0], Circle(), 0, new THREE.Vector3(0, 0, 0), 0, 0.1),
     ];
+
+    return { staticEntities, dynamicEntities, light, paths, cameraConfig: mainConfig };
+}
+
+async function createStaticTestScene(
+    gpu: WebGPUData,
+    mainConfig: CameraConfig,
+    direction: THREE.Vector3
+): Promise<Scene> {
+    // light source
+    const light = new DirectionalLight();
+    light.direction = direction;
+
+    // add object entities
+    let staticEntities = [];
+    let dynamicEntities: Entity[] = [];
+
+    const plane = createEntityFromGeometry(
+        gpu,
+        new THREE.BoxGeometry(50, 45, 1),
+        modelType.STATIC,
+        new THREE.Vector3(0, 0, 0),
+        new THREE.Euler(-Math.PI / 2, undefined, undefined)
+    );
+    staticEntities.push(plane);
+
+    // add car
+    const car = await loadAndAddObject('/assets/moped.glb');
+    if (car) {
+        car.scale.setScalar(0.05);
+        car.position.set(0, 0, 0);
+        car.updateMatrixWorld(true);
+    } else {
+        throw new Error('NO CAR!');
+    }
+
+    const carMesh = getModelBuffers(
+        gpu,
+        car,
+        modelType.STATIC
+    );
+
+    const circle = createEntityFromGeometry(
+        gpu,
+        new THREE.SphereGeometry(1.01),
+        modelType.STATIC,
+        new THREE.Vector3(0, 1, 0),
+        new THREE.Euler(0, 0, undefined)
+    );
+    staticEntities.push(circle);
+
+    // staticEntities.push(carMesh[0]);
+
+    const paths: Path[] = [];
 
     return { staticEntities, dynamicEntities, light, paths, cameraConfig: mainConfig };
 }
@@ -198,11 +251,10 @@ export async function initRender(
     };
 
     // get test scene
-    let scene = await createTestScene(
+    let scene = await createStaticTestScene(
         gpu,
         mainConfig,
-        UI.direction,
-        UI.numOfCascades
+        UI.direction
     );
 
     // load view proj matrices
@@ -342,6 +394,12 @@ export async function updateRenderFromUI(
             renderData.gpu,
             renderData.depthPassResources,
             UI.depthPassSize,
+            UI.numOfCascades
+        );
+        onDepthMapLightChange(
+            renderData.gpu,
+            renderData.depthPassResources,
+            renderData.sceneBuffers.lightBuffer,
             UI.numOfCascades
         );
         onRenderPassDepthMapChange(
