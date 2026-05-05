@@ -17,17 +17,9 @@ export type AreaIntersectionMap = {
 
 // grid size
 // cone angle
-
-const coneAngle = 7; // degrees
-const hemisphereRadius = 10;
-const spheresRadius = 5;
-const distance = 5;
-
 // ambient component - cosine weighted percentage hemisphere occluded
 // directional component - trace to point by direction, get  + intercestions with sphere
 // precoimpute using monte carlo for directional component -store in a texture
-
-
 /*
     Create a texture which stores the result of
     area intersection for directional component
