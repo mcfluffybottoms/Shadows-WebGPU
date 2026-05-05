@@ -1,4 +1,5 @@
 import * as THREE from 'three/webgpu';
+
 import {
     addCamera,
     CameraConfig,
@@ -17,6 +18,7 @@ import {
     DepthPassResources,
     initDepthPass,
     onDepthMapChange,
+    onDepthMapLightChange,
 } from './depth-pass';
 import {
     createSceneBuffers,
@@ -40,7 +42,7 @@ import {
     loadAndAddObject,
 } from '../utils/loader';
 import { DirectionalLight } from '../scene/light-types';
-import { Entity, modelType, Scene } from '../scene/scene-types';
+import { ApproxedGeometries, ComponentsMap, Entity, modelType, Scene } from '../scene/scene-types';
 import {
     cameraWhat,
     renderWhat,
@@ -49,6 +51,9 @@ import {
     UIFlags,
 } from '../UI/UI-flags-types';
 import { Circle, Path, TestScenePath } from '../scene/movement/path';
+
+import carApprox from '../../public/assets/car_approx.json';
+import { getApproximatedGeometry } from '../utils/get-sphere-approximator';
 
 export type RenderInfo = {
     // device config
@@ -68,11 +73,10 @@ export type RenderInfo = {
 async function createTestScene(
     gpu: WebGPUData,
     mainConfig: CameraConfig,
-    direction: THREE.Vector3,
-    numOfCascades: number
+    direction: THREE.Vector3
 ): Promise<Scene> {
     // light source
-    const light = new DirectionalLight(mainConfig.camera, numOfCascades);
+    const light = new DirectionalLight();
     light.direction = direction;
 
     // add object entities
@@ -96,7 +100,8 @@ async function createTestScene(
         new THREE.BoxGeometry(50, 45, 1),
         modelType.STATIC,
         new THREE.Vector3(0, -0.5, 0),
-        new THREE.Euler(-Math.PI / 2, undefined, undefined)
+        new THREE.Euler(-Math.PI / 2, undefined, undefined),
+        1.0
     );
     staticEntities.push(plane);
 
@@ -104,7 +109,7 @@ async function createTestScene(
     const paths: Path[] = []
 
     // add car
-    const car = await loadAndAddObject('/assets/moped.glb');
+    const car = await loadAndAddObject('/assets/low_poly_car.glb');
     const y = -0.1
     const carPath = TestScenePath();
     for(let i = 0; i < 5; i += 1) {
@@ -134,11 +139,10 @@ async function createTestScene(
 async function createDynamicTestScene(
     gpu: WebGPUData,
     mainConfig: CameraConfig,
-    direction: THREE.Vector3,
-    numOfCascades: number
+    direction: THREE.Vector3
 ): Promise<Scene> {
     // light source
-    const light = new DirectionalLight(mainConfig.camera, numOfCascades);
+    const light = new DirectionalLight();
     light.direction = direction;
 
     // add object entities
@@ -150,12 +154,13 @@ async function createDynamicTestScene(
         new THREE.BoxGeometry(50, 45, 1),
         modelType.STATIC,
         new THREE.Vector3(0, 0, 0),
-        new THREE.Euler(-Math.PI / 2, undefined, undefined)
+        new THREE.Euler(-Math.PI / 2, undefined, undefined),
+        1.0
     );
     staticEntities.push(plane);
 
     // add car
-    const car = await loadAndAddObject('/assets/moped.glb');
+    const car = await loadAndAddObject('/assets/low_poly_car.glb');
     if (car) {
         car.scale.setScalar(0.05);
         car.position.set(0, 0, 0);
@@ -178,34 +183,34 @@ async function createDynamicTestScene(
     return { staticEntities, dynamicEntities, light, paths, cameraConfig: mainConfig };
 }
 
-async function createStaticCar(
+async function debugSpheresTestScene(
     gpu: WebGPUData,
     mainConfig: CameraConfig,
-    direction: THREE.Vector3,
-    numOfCascades: number
+    direction: THREE.Vector3
 ): Promise<Scene> {
     // light source
-    const light = new DirectionalLight(mainConfig.camera, numOfCascades);
+    const light = new DirectionalLight();
     light.direction = direction;
 
     // add object entities
-    let staticEntities: Entity[] = [];
+    let staticEntities = [];
     let dynamicEntities: Entity[] = [];
 
-    const plane = await createEntityFromGeometry(
+    const plane = createEntityFromGeometry(
         gpu,
         new THREE.BoxGeometry(50, 45, 1),
         modelType.STATIC,
         new THREE.Vector3(0, 0, 0),
-        new THREE.Euler(-Math.PI / 2, undefined, undefined)
+        new THREE.Euler(-Math.PI / 2, undefined, undefined),
+        1.0
     );
     staticEntities.push(plane);
 
     // add car
-    const car = await loadAndAddObject('/assets/moped.glb');
+    const car = await loadAndAddObject('/assets/low_poly_car.glb');
     if (car) {
-        car.scale.setScalar(0.1);
-        car.position.set(0, -0.4, 0);
+        car.scale.setScalar(0.05);
+        car.position.set(0, 0, 0);
         car.updateMatrixWorld(true);
     } else {
         throw new Error('NO CAR!');
@@ -214,15 +219,89 @@ async function createStaticCar(
     const carMesh = getModelBuffers(
         gpu,
         car,
-        modelType.DYNAMIC
+        modelType.STATIC
     );
-    staticEntities.push(carMesh[0]);
+
+    const approxedCar = getApproximatedGeometry(carApprox);
+    
+    ApproxedGeometries.set(carMesh[0], approxedCar);
+    const scale = 0.01;
+    console.log(approxedCar)
+    for(const sphere of approxedCar) {
+        const sphereMesh = createEntityFromGeometry(
+            gpu,
+            new THREE.SphereGeometry(sphere.radius),
+            modelType.STATIC,
+            new THREE.Vector3(sphere.center.x * scale, sphere.center.y * scale + 1, sphere.center.z * scale),
+            new THREE.Euler(0, 0, undefined),
+            scale
+        );
+        console.log(ComponentsMap.get(sphereMesh));
+        staticEntities.push(sphereMesh);
+    }
+
+    // staticEntities.push(carMesh[0]);
 
     const paths: Path[] = [];
 
     return { staticEntities, dynamicEntities, light, paths, cameraConfig: mainConfig };
 }
 
+async function createStaticTestScene(
+    gpu: WebGPUData,
+    mainConfig: CameraConfig,
+    direction: THREE.Vector3
+): Promise<Scene> {
+    // light source
+    const light = new DirectionalLight();
+    light.direction = direction;
+
+    // add object entities
+    let staticEntities = [];
+    let dynamicEntities: Entity[] = [];
+
+    const plane = createEntityFromGeometry(
+        gpu,
+        new THREE.BoxGeometry(50, 45, 1),
+        modelType.STATIC,
+        new THREE.Vector3(0, 0, 0),
+        new THREE.Euler(-Math.PI / 2, undefined, undefined),
+        1.0
+    );
+    staticEntities.push(plane);
+
+    // add car
+    const car = await loadAndAddObject('/assets/low_poly_car.glb');
+    if (car) {
+        car.scale.setScalar(0.05);
+        car.position.set(0, 0, 0);
+        car.updateMatrixWorld(true);
+    } else {
+        throw new Error('NO CAR!');
+    }
+
+    const carMesh = getModelBuffers(
+        gpu,
+        car,
+        modelType.STATIC
+    );
+
+    const circle = createEntityFromGeometry(
+        gpu,
+        new THREE.SphereGeometry(1.01),
+        modelType.STATIC,
+        new THREE.Vector3(0, 1, 0),
+        new THREE.Euler(0, 0, undefined),
+        1.0
+    );
+    staticEntities.push(circle);
+
+    // staticEntities.push(carMesh[0]);
+
+    const paths: Path[] = [];
+
+    return { staticEntities, dynamicEntities, light, paths, cameraConfig: mainConfig };
+}
 
 
 // ----- INIT RENDER INFO ----- //
@@ -241,11 +320,10 @@ export async function initRender(
     };
 
     // get test scene
-    let scene = await createStaticCar(
+    let scene = await debugSpheresTestScene(
         gpu,
         mainConfig,
-        UI.direction,
-        UI.numOfCascades
+        UI.direction
     );
 
     // load view proj matrices
@@ -263,13 +341,16 @@ export async function initRender(
         gpu,
         configBuffer,
         UI.shadowMap,
+        UI.analyticShadowsOn,
         UI.numberOfSamples,
         UI.numOfCascades,
         UI.biasType,
         UI.biasValue,
         UI.lightOn,
         UI.cascadeLayers,
-        UI.lightAmbient
+        UI.lightAmbient,
+        UI.coneAngle,
+        UI.hemisphereRadius
     );
     fillSceneBuffers(
         gpu,
@@ -335,13 +416,16 @@ export async function updateRenderFromUI(
             renderData.gpu,
             renderData.configBuffers,
             UI.shadowMap,
+            UI.analyticShadowsOn,
             UI.numberOfSamples,
             UI.numOfCascades,
             UI.biasType,
             UI.biasValue,
             UI.lightOn,
             UI.cascadeLayers,
-            UI.lightAmbient
+            UI.lightAmbient,
+            UI.coneAngle,
+            UI.hemisphereRadius
         );
     }
 
@@ -385,6 +469,12 @@ export async function updateRenderFromUI(
             renderData.gpu,
             renderData.depthPassResources,
             UI.depthPassSize,
+            UI.numOfCascades
+        );
+        onDepthMapLightChange(
+            renderData.gpu,
+            renderData.depthPassResources,
+            renderData.sceneBuffers.lightBuffer,
             UI.numOfCascades
         );
         onRenderPassDepthMapChange(

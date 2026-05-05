@@ -3,6 +3,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { WebGPUData } from './webgpu-data';
 import { addEntity, Entity, modelType } from '../scene/scene-types';
 import { ModelBuffers } from '../scene/buffer-types';
+import { getApproximatedGeometry } from './get-sphere-approximator';
 
 // --------------THREE JS PARSER FOR OBJ FILES-------------- //
 
@@ -175,7 +176,6 @@ export function getModelBuffers(
             quat = quat || new THREE.Quaternion();
             scale = scale || new THREE.Vector3();
             obj.matrixWorld.decompose(pos, quat, scale);
-
             entities.push(
                 addEntity(
                     mesh,
@@ -215,10 +215,13 @@ export function createEntityFromGeometry(
     geom: THREE.BufferGeometry,
     type: modelType,
     pos: THREE.Vector3,
-    rotation: THREE.Euler
+    rotation: THREE.Euler,
+    scale: number,
+    approximateSrc?: string,
 ) {
     const mesh = new THREE.Mesh(geom);
     mesh.position.set(pos.x, pos.y, pos.z);
+    mesh.scale.set(scale, scale, scale);
 
     mesh.rotation.x = rotation.x ?? mesh.rotation.x;
     mesh.rotation.y = rotation.y ?? mesh.rotation.y;

@@ -84,6 +84,29 @@
         <input id="lambda" type="number" min="0" max="1" step="0.01"/>
       </div>
     </details>
+    <details>
+      <summary>Analytic Shadows Settings:</summary>
+      <div class="settings-block">
+        <div class="group"></div>
+        Analytic Shadows:
+        <input id="AnalyticShadowsOn" type="checkbox"/>
+        <br/>
+        Cone Angle: 
+        <input id="coneAngle" type="number" min="0" max="180" step="2"/>
+        <br/>
+        Hemisphere Radius: 
+        <input id="hemisphereRadius" type="number" min="0" max="50" step="1"/>
+        <br/>
+      </div>
+    </details>
+    <details>
+      <summary>Stats</summary>
+      <div>
+        <p id="fps-counter">FPS: 0</p>
+        <p id="mpf-counter">AVG MPF: 0</p>
+      </div>
+    </details>
+    
     
   </div>
 
@@ -91,10 +114,6 @@
   <script type="module" src="../src/main.ts"></script>
   <canvas id="canvas"></canvas>
 
-  <div class="stats">
-    <p id="fps-counter">FPS: 0</p>
-    <p id="mpf-counter">AVG MPF: 0</p>
-  </div>
 </body>
 
 </html>

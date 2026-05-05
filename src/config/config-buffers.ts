@@ -8,7 +8,7 @@ export type ConfigBuffers = {
 export function createConfigBuffers(
     gpu: WebGPUData
 ) : ConfigBuffers {
-    const configBufferSize = 6 * Uint32Array.BYTES_PER_ELEMENT + 2 * Float32Array.BYTES_PER_ELEMENT;
+    const configBufferSize = 7 * Uint32Array.BYTES_PER_ELEMENT + 4 * Float32Array.BYTES_PER_ELEMENT;
 
     const configBuffer = gpu.device.createBuffer({
         size: configBufferSize,
@@ -25,13 +25,16 @@ export function fillConfigBuffers(
     gpu: WebGPUData,
     buffers: ConfigBuffers,
     shadows: boolean,
+    a_shadows: boolean,
     numberOfSamples: number,
     numberOfCascades: number,
     biasType: number,
     biasValue: number,
     lightOn: boolean,
     cascadeLayers: boolean,
-    lightAmbient: number
+    lightAmbient: number,
+    coneAngle: number,
+    hemisphereRadius: number
 ) : ConfigBuffers {
     const { configBuffer } = buffers;
     
@@ -40,13 +43,16 @@ export function fillConfigBuffers(
     const float32View = new Float32Array(dataArray);
     
     uint32View[0] = shadows ? 1 : 0;
-    uint32View[1] = numberOfSamples;
-    uint32View[2] = numberOfCascades;
-    uint32View[3] = biasType;
-    uint32View[4] = lightOn ? 1 : 0;
-    uint32View[5] = cascadeLayers ? 1 : 0;
-    float32View[6] = biasValue;
-    float32View[7] = lightAmbient;
+    uint32View[1] = a_shadows ? 1 : 0;
+    uint32View[2] = numberOfSamples;
+    uint32View[3] = numberOfCascades;
+    uint32View[4] = biasType;
+    uint32View[5] = lightOn ? 1 : 0;
+    uint32View[6] = cascadeLayers ? 1 : 0;
+    float32View[7] = biasValue;
+    float32View[8] = lightAmbient;
+    float32View[9] = coneAngle;
+    float32View[10] = hemisphereRadius;
     
     gpu.device.queue.writeBuffer(configBuffer, 0, dataArray);
     

@@ -11,7 +11,7 @@ export class DirectionalLight {
     private upVector: THREE.Vector3;
     direction: THREE.Vector3;
 
-    constructor(camera: THREE.OrthographicCamera | THREE.PerspectiveCamera, numOfCascades: number) {
+    constructor() {
         this.upVector = new THREE.Vector3(0, 1, 0);
         this.direction = new THREE.Vector3(1.0, 0.5, -0.5).normalize();
     }

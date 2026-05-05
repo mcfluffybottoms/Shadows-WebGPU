@@ -1,3 +1,6 @@
+const PI = 3.14159265;
+const DEG_TO_RAD = 3.14159265 / 180.0;
+
 // ----- SCENE SETUP ----- // 
 @group(0) @binding(2) var staticDepthTex: texture_depth_2d_array;
 @group(0) @binding(3) var dynamicDepthTex: texture_depth_2d_array;
@@ -54,6 +57,40 @@ fn getBias(projCoords: vec3f) -> f32 {
     }
     return bias;
 }
+
+const CONE_ANGLE = 5.0;
+const HEMISPHERE_RADIUS = 5.0;
+
+const NUM_TILES = 50;
+const NUM_OCCLUDERS_X = 5;
+const NUM_OCCLUDERS_Z = 5;
+const WIDTH = 50;
+const HEIGHT = 50;
+const START_X = -25;
+const START_Z = -25;
+const TILES_X = 10;
+const TILES_Z = 5;
+
+fn aabbSphereTest(aabbMin: vec3f, aabbMax: vec3f, sphereCenter: vec3f, sphereRadius: f32) -> bool {
+    var closestPoint: vec3f;
+    closestPoint.x = clamp(sphereCenter.x, aabbMin.x, aabbMax.x);
+    closestPoint.y = clamp(sphereCenter.y, aabbMin.y, aabbMax.y);
+    closestPoint.z = clamp(sphereCenter.z, aabbMin.z, aabbMax.z);
+    
+    let diff = sphereCenter - closestPoint;
+    let distanceSq = dot(diff, diff);
+    return distanceSq <= sphereRadius * sphereRadius;
+}
+// fn shadowCalculation1(in: FragmentIn, normal: vec3f, lightDir: vec3f) -> f32 {
+//     const SPHERE_RADIUS = 1.0;
+//     let position = vec3f(in.fragPos.x, in.fragPos.y, in.fragPos.z);
+//     let sphereCenter = vec3f(0.0, 1.0, 0.0);
+//     let dyn = dynamicComponent(lightDir, normal, sphereCenter, SPHERE_RADIUS, position);
+
+//     let shadow = (1.0 - dyn) ;
+//     return dyn;
+// }
+
 
 fn shadowCalculation(in: FragmentIn, normal: vec3f, lightDir: vec3f) -> f32 {
 
@@ -112,7 +149,7 @@ fn shadowCalculation(in: FragmentIn, normal: vec3f, lightDir: vec3f) -> f32 {
     if (shadow > 1.0) {
         return 1.0;
     }
-    
+
     return shadow;
 }
 
@@ -127,14 +164,14 @@ fn main(in: FragmentIn) -> @location(0) vec4f {
     
     // diffuse
     let diff = max(dot(normal, lightDir), 0.0);
-    let diffuse = diff * vec3f(1.0, 1.0, 1.0);
+    let diffuse = max(dot(normal, lightDir), 0.0);
 
     // shadow
     var shadow = 1.0;
     var cascadeId = getCascadeId(in);
     if (config.shadowMapOn == 1) {
         shadow = shadowCalculation(in, normal, lightDir);
-    }
+    } 
 
     // lighting
     if (config.shadowMapOn == 1 && config.cascadeLayers == 1) {
@@ -142,15 +179,25 @@ fn main(in: FragmentIn) -> @location(0) vec4f {
     }
 
     var lighting = color;
+
+    // ambient
+    const SPHERE_RADIUS = 1.0;
+    let position = vec3f(in.fragPos.x, in.fragPos.y, in.fragPos.z);
+    let sphereCenter = vec3f(0.0, 1.0, 0.0);
+    let amb = config.lightAmbient;
+
     // if need phong light
-    if (config.lightOn == 1) {
-        lighting = (config.lightAmbient + shadow * (diffuse + 0.0)) * color;
+    if(config.lightOn == 1) {
+        lighting = (amb + shadow * (diffuse + 0.0)) * color;
     } else {
         lighting = shadow * color;
     }
 
     // if need debug for cascades
     var finalColor = lighting;
+    if(config.shadowMapOn == 1 && config.cascadeLayers == 1) {
+        finalColor = mix(lighting, lighting * colors[cascadeId], 0.7);
+    }
 
     return vec4f(finalColor, 1.0);
 }
