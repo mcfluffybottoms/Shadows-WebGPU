@@ -1,0 +1,100 @@
+# MTL file - created by a modified js OBJExporter
+
+newmtl Material.027
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pr 0.6
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0.05344536 0.05344536 0.05344536
+Ke 0 0 0
+
+newmtl Material.031
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pr 0.6
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0.25483120000000004 0.25483120000000004 0.25483120000000004
+Ke 0 0 0
+
+newmtl Material.030
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pr 0.6
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0.8 0 0
+Ke 0 0 0
+
+newmtl Material.028
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pr 0.6
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0.0885512 0.0885512 0.0885512
+Ke 0 0 0
+
+newmtl Carcamero_ma
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pr 0.6
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0.09482000000000002 0.6400000000000001 0.04935320000000001
+Ke 0 0 0
+
+newmtl Material.032
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pr 0.6
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0.3737616 0.3737616 0.3737616
+Ke 0 0 0
+
+newmtl Material.029
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pr 0.6
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0.0021830639999999998 0.07267032 0.035671760000000004
+Ke 0 0 0
+
+newmtl Material.026
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pr 0.6
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0.8 0.8 0.8
+Ke 0 0 0
+
+newmtl Material.025
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pr 0.6
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0.6400000000000001 0.37964400000000004 0.01650048
+Ke 0 0 0

@@ -58,29 +58,6 @@ fn getBias(projCoords: vec3f) -> f32 {
 const CONE_ANGLE = 5.0;
 const HEMISPHERE_RADIUS = 5.0;
 
-/*
-    Ambient Aperture Lighting -- Chris Oat, Pedro V. Sander
-*/
-fn sphericalCapIntersectionApprox(
-    radius1: f32,
-    radius2: f32,
-    dist: f32,
-) -> f32 {
-    var area: f32 = 0.0;
-
-    if(dist >= radius1 + radius2) {
-        return area;
-    }
-
-    area = 6.283185308 - 6.283185308 * cos(min(radius1, radius2));
-
-    if(dist > max(radius1, radius2) - min(radius1, radius2)) {
-        let diff = abs(radius1 - radius2);
-        area *= smoothstep(0.0, 1.0, 1.0 - saturate((dist - diff)/(radius1 + radius2 - diff)));
-    }
-
-    return area;
-}
 
 fn ambientComponent(
     sphereRadius: f32,
@@ -144,78 +121,15 @@ fn aabbSphereTest(aabbMin: vec3f, aabbMax: vec3f, sphereCenter: vec3f, sphereRad
     let distanceSq = dot(diff, diff);
     return distanceSq <= sphereRadius * sphereRadius;
 }
+// fn shadowCalculation1(in: FragmentIn, normal: vec3f, lightDir: vec3f) -> f32 {
+//     const SPHERE_RADIUS = 1.0;
+//     let position = vec3f(in.fragPos.x, in.fragPos.y, in.fragPos.z);
+//     let sphereCenter = vec3f(0.0, 1.0, 0.0);
+//     let dyn = dynamicComponent(lightDir, normal, sphereCenter, SPHERE_RADIUS, position);
 
-fn getTileMinBound(tileIndex: u32) -> vec3f {
-    let tileX = f32(tileIndex % NUM_OCCLUDERS_X);
-    let tileZ = f32(tileIndex / NUM_OCCLUDERS_Z);
-    
-    let tileSizeX = f32(WIDTH) / f32(NUM_OCCLUDERS_X);
-    let tileSizeZ = f32(HEIGHT) / f32(NUM_OCCLUDERS_Z);
-    
-    let boundX = START_X + tileX * tileSizeX;
-    let boundZ = START_Z + tileZ * tileSizeZ;
-    let boundY = 1.0;
-    
-    return vec3f(boundX, boundY, boundZ);
-}
-
-fn getTileMaxBound(tileIndex: u32) -> vec3f {
-    let tileX = f32(tileIndex % NUM_OCCLUDERS_X);
-    let tileZ = f32(tileIndex / NUM_OCCLUDERS_Z);
-    
-    let tileSizeX = f32(WIDTH) / f32(NUM_OCCLUDERS_X);
-    let tileSizeZ = f32(HEIGHT) / f32(NUM_OCCLUDERS_Z);
-    
-    let boundX = START_X + tileX * tileSizeX + tileSizeX;
-    let boundZ = START_Z + tileZ * tileSizeZ + tileSizeZ;
-    let boundY = -1.0;
-    
-    return vec3f(boundX, boundY, boundZ);
-}
-
-fn shadowCalculation2(in: FragmentIn, normal: vec3f, lightDir: vec3f) -> f32 {
-    var dyn = 0.0;
-    var amb = 0.0;
-    // for (var i: u32 = 0; i < NUM_TILES; i++) {
-    //     for(var i: u32 = 0; i < NUM_OCCLUDERS_X * NUM_OCCLUDERS_Z; i++) {
-    //        let sphereCenter = getSphereCenter(i);
-    //         if(!aabbSphereTest(getTileMinBound(i), getTileMaxBound(i), getSphereCenter(i), SPHERE_RADIUS)) {
-    //             continue;
-    //         }
-    //         let position = vec3f(in.fragPos.x, in.fragPos.y, in.fragPos.z);
-    //         let loc_dyn = dynamicComponent(lightDir, normal, sphereCenter, position);
-    //         let loc_amb = ambientComponent(SPHERE_RADIUS, sphereCenter, position);
-    //         dyn *= 1.0 - loc_dyn;
-    //         if(loc_amb != 0) {
-    //             amb *= loc_amb;
-    //         } 
-    //     }
-    // }
-
-    const SPHERE_RADIUS = 1.0;
-    let sphereCenter = vec3f(0.0, 2.0, 0.0);
-    // if(!aabbSphereTest(getTileMinBound(i), getTileMaxBound(i), getSphereCenter(i), SPHERE_RADIUS)) {
-    //     continue;
-    // }
-    let position = vec3f(in.fragPos.x, in.fragPos.y, in.fragPos.z);
-    let loc_dyn = dynamicComponent(lightDir, normal, sphereCenter, SPHERE_RADIUS, position);
-    let loc_amb = ambientComponent(SPHERE_RADIUS, sphereCenter, position);
-    dyn = loc_dyn;
-    amb = 0;
-
-    let shadow = amb + dyn * max(dot(normal, lightDir), 0);
-    return shadow;
-}
-
-fn shadowCalculation1(in: FragmentIn, normal: vec3f, lightDir: vec3f) -> f32 {
-    const SPHERE_RADIUS = 1.0;
-    let position = vec3f(in.fragPos.x, in.fragPos.y, in.fragPos.z);
-    let sphereCenter = vec3f(0.0, 1.0, 0.0);
-    let dyn = dynamicComponent(lightDir, normal, sphereCenter, SPHERE_RADIUS, position);
-
-    let shadow = (1.0 - dyn) ;
-    return dyn;
-}
+//     let shadow = (1.0 - dyn) ;
+//     return dyn;
+// }
 
 
 fn shadowCalculation(in: FragmentIn, normal: vec3f, lightDir: vec3f) -> f32 {
@@ -296,12 +210,9 @@ fn main(in: FragmentIn) -> @location(0) vec4f {
     var shadow = 1.0;
     var cascadeId = getCascadeId(in);
     if(config.shadowMapOn == 1) {
-        shadow = 1.0 - shadowCalculation1(in, normal, lightDir);
+        shadow = shadowCalculation(in, normal, lightDir);
     } 
-    // else {
-    //     shadow = shadowCalculation(in, normal, lightDir);
-    // } 
-    let seehadow = shadowCalculation(in, normal, lightDir);
+
     // lighting
     var lighting = color;
 
@@ -325,7 +236,7 @@ fn main(in: FragmentIn) -> @location(0) vec4f {
     // if need debug for cascades
     var finalColor = lighting;
     if(config.shadowMapOn == 1 && config.cascadeLayers == 1) {
-        finalColor = mix(lighting, lighting * colors[cascadeId], 0.3);
+        finalColor = mix(lighting, lighting * colors[cascadeId], 0.7);
     }
 
     return vec4f(finalColor, 1.0);

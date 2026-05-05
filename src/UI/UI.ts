@@ -142,6 +142,24 @@ export function initUInteractions(): void {
         UI.lambda = sizeInput.valueAsNumber;
     });
 
+    // lambda
+    document.getElementById('lambda')?.addEventListener('change', () => {
+        const shadowMapCheckbox = document.getElementById('AnalyticShadowsOn') as HTMLInputElement;
+        UI.analyticShadowsOn = shadowMapCheckbox.checked;
+        UIFlags.configChanged = true;
+    });
+    document.getElementById('lambda')?.addEventListener('change', () => {
+        const sizeInput = document.getElementById('coneAngle') as HTMLInputElement;
+        UI.coneAngle = sizeInput.valueAsNumber;
+        UIFlags.configChanged = true;
+    });
+    document.getElementById('lambda')?.addEventListener('change', () => {
+        const sizeInput = document.getElementById('hemisphereRadius') as HTMLInputElement;
+        UI.hemisphereRadius = sizeInput.valueAsNumber;
+        UIFlags.configChanged = true;
+    });
+
+
 }
 
 export function changeFPS(fps: number) {

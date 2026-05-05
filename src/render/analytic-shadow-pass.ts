@@ -7,7 +7,7 @@ import { ComponentsMap, Entity, Scene } from "../scene/scene-types";
 import { ConfigBuffers } from "../config/config-buffers";
 import { importShaderCode } from "../utils/import-shader-code";
 
-const depthMapVertex = await importShaderCode(depthMapVertexRaw);
+const analyticShadowsPass = await importShaderCode(depthMapVertexRaw);
 
 export type AreaIntersectionMap = {
     texture: GPUTexture,

@@ -8,6 +8,7 @@ import {
     modelType,
 } from '../scene/scene-types';
 import { ModelBuffers } from '../scene/buffer-types';
+import { getApproximatedGeometry } from './get-sphere-approximator';
 
 // --------------THREE JS PARSER FOR OBJ FILES-------------- //
 
@@ -141,15 +142,16 @@ export function getModelBuffers(
     group.traverse((obj) => {
         if ((obj as THREE.Mesh).isMesh) {
             const mesh = getModelBuffersFromTHREEMesh(gpu, obj as THREE.Mesh);
+
+            let or_obj = undefined;
     
             const modelMatrix = obj.matrixWorld;
             pos = pos || new THREE.Vector3()
             quat = quat || new THREE.Quaternion();
             scale = scale || new THREE.Vector3();
             obj.matrixWorld.decompose(pos, quat, scale);
-
             entities.push(
-                addEntity(mesh, modelMatrix, type, pos, new THREE.Euler().setFromQuaternion(quat), scale)
+                addEntity(mesh, modelMatrix, type, pos, new THREE.Euler().setFromQuaternion(quat), scale, or_obj)
             );
         }
     });
@@ -180,10 +182,13 @@ export function createEntityFromGeometry(
     geom: THREE.BufferGeometry,
     type: modelType,
     pos: THREE.Vector3,
-    rotation: THREE.Euler
+    rotation: THREE.Euler,
+    scale: number,
+    approximateSrc?: string,
 ) {
     const mesh = new THREE.Mesh(geom);
     mesh.position.set(pos.x, pos.y, pos.z);
+    mesh.scale.set(scale, scale, scale);
 
     mesh.rotation.x = rotation.x ?? mesh.rotation.x;
     mesh.rotation.y = rotation.y ?? mesh.rotation.y;

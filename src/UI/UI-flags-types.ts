@@ -29,6 +29,9 @@ export type UIConfig = {
     biasType: number;
     biasValue: number;
     lambda: number;
+    analyticShadowsOn: boolean;
+    coneAngle: number;
+    hemisphereRadius: number;
 }
 export let UI: UIConfig = {
     // change view
@@ -52,6 +55,10 @@ export let UI: UIConfig = {
     biasType: 2,
     biasValue: 0.001,
     lambda: 0.7,
+    // analytic shadows
+    analyticShadowsOn: true,
+    coneAngle: 15.0,
+    hemisphereRadius: 5.0,
 };
 
 export type UIFlags = {

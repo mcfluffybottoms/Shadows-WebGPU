@@ -27,13 +27,16 @@ struct LightOptionsUniforms {
 // configuration
 struct Config {
     shadowMapOn: u32,
+    analyticShadowsOn: u32,
     samplesPerSide: u32,
     numOfCascades: u32,
     biasType: u32,
     lightOn: u32,
     cascadeLayers: u32,
     biasValue: f32,
-    lightAmbient: f32
+    lightAmbient: f32,
+    coneAngle: f32,
+    hemisphereRadius: f32
 }
 
 // cameras

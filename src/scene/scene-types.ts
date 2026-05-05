@@ -3,6 +3,7 @@ import { DirectionalLight } from './light-types';
 import { ModelBuffers } from './buffer-types';
 import { Path } from './movement/path';
 import { CameraConfig } from '../utils/camera-utils';
+import { ApproxedGeometry, getApproximatedGeometry } from '../utils/get-sphere-approximator';
 
 export type Entity = {
     id: number;
@@ -62,6 +63,7 @@ type Components = {
 
 // ecs for storing rendering data
 export const ComponentsMap: Map<Entity, Components> = new Map();
+export const ApproxedGeometries: Map<Entity, ApproxedGeometry> = new Map();
 
 // TODO - add camera
 export type Scene = {
@@ -88,6 +90,10 @@ export function addEntity(
     scale: THREE.Vector3
 ): Entity {
     const entity = { id: generateID() };
+    ComponentsMap.set(entity, {
+        RenderComponent: { mesh },
+        ModelComponent: { modelMatrix, type, position, rotation, scale },
+    });
     ComponentsMap.set(entity, {
         RenderComponent: { mesh },
         ModelComponent: { modelMatrix, type, position, rotation, scale },
