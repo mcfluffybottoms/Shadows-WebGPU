@@ -40,7 +40,7 @@ import {
     loadAndAddObject,
 } from '../utils/loader';
 import { DirectionalLight } from '../scene/light-types';
-import { modelType, Scene } from '../scene/scene-types';
+import { Entity, modelType, Scene } from '../scene/scene-types';
 import {
     cameraWhat,
     renderWhat,
@@ -108,11 +108,8 @@ async function createTestScene(
     const y = -0.1
     const carPath = TestScenePath();
     for(let i = 0; i < 5; i += 1) {
-        //if(!carM) break;
         let p = i % carPath.length;
         const pos = new THREE.Vector3(carPath[p].x, y, carPath[p].y);
-        //let car: THREE.Group<THREE.Object3DEventMap> = new THREE.Group();
-        //car.copy(carM);
         if (car) {
             car.scale.setScalar(0.01);
             car.position.set(pos.x, pos.y, pos.z);
@@ -148,7 +145,7 @@ async function createDynamicTestScene(
     let staticEntities = [];
     let dynamicEntities = [];
 
-    const plane = createEntityFromGeometry(
+    const plane = await createEntityFromGeometry(
         gpu,
         new THREE.BoxGeometry(50, 45, 1),
         modelType.STATIC,
@@ -167,7 +164,7 @@ async function createDynamicTestScene(
         throw new Error('NO CAR!');
     }
 
-    const carMesh = getModelBuffers(
+    const carMesh = await getModelBuffers(
         gpu,
         car,
         modelType.DYNAMIC
@@ -175,11 +172,57 @@ async function createDynamicTestScene(
     dynamicEntities.push(carMesh[0]);
 
     const paths = [
-        new Path(carMesh[0], Circle(), new THREE.Vector3(0, 0, 0), 0, 0.1),
+        new Path(carMesh[0], Circle(), 0, new THREE.Vector3(0, 0, 0), 0, 0.1),
     ];
 
     return { staticEntities, dynamicEntities, light, paths, cameraConfig: mainConfig };
 }
+
+async function createStaticCar(
+    gpu: WebGPUData,
+    mainConfig: CameraConfig,
+    direction: THREE.Vector3,
+    numOfCascades: number
+): Promise<Scene> {
+    // light source
+    const light = new DirectionalLight(mainConfig.camera, numOfCascades);
+    light.direction = direction;
+
+    // add object entities
+    let staticEntities: Entity[] = [];
+    let dynamicEntities: Entity[] = [];
+
+    const plane = await createEntityFromGeometry(
+        gpu,
+        new THREE.BoxGeometry(50, 45, 1),
+        modelType.STATIC,
+        new THREE.Vector3(0, 0, 0),
+        new THREE.Euler(-Math.PI / 2, undefined, undefined)
+    );
+    staticEntities.push(plane);
+
+    // add car
+    const car = await loadAndAddObject('/assets/moped.glb');
+    if (car) {
+        car.scale.setScalar(0.1);
+        car.position.set(0, -0.4, 0);
+        car.updateMatrixWorld(true);
+    } else {
+        throw new Error('NO CAR!');
+    }
+
+    const carMesh = getModelBuffers(
+        gpu,
+        car,
+        modelType.DYNAMIC
+    );
+    staticEntities.push(carMesh[0]);
+
+    const paths: Path[] = [];
+
+    return { staticEntities, dynamicEntities, light, paths, cameraConfig: mainConfig };
+}
+
 
 
 // ----- INIT RENDER INFO ----- //
@@ -198,7 +241,7 @@ export async function initRender(
     };
 
     // get test scene
-    let scene = await createTestScene(
+    let scene = await createStaticCar(
         gpu,
         mainConfig,
         UI.direction,

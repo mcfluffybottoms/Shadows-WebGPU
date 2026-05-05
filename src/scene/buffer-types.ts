@@ -1,7 +1,7 @@
 export interface ModelBuffers {
   vertexBuffer: GPUBuffer;
   indexBuffer: GPUBuffer | null;
-  color?: GPUBuffer;
+  texture?: GPUTexture;
 
   vertexCount: number;
   indexCount: number;

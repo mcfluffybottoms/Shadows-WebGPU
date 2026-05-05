@@ -1,12 +1,7 @@
 import * as THREE from 'three/webgpu';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { WebGPUData } from './webgpu-data';
-import {
-    addEntity,
-    Entity,
-    getModelMatrix,
-    modelType,
-} from '../scene/scene-types';
+import { addEntity, Entity, modelType } from '../scene/scene-types';
 import { ModelBuffers } from '../scene/buffer-types';
 
 // --------------THREE JS PARSER FOR OBJ FILES-------------- //
@@ -120,12 +115,42 @@ export function getModelBuffersFromTHREEMesh(
         normalAttribute
     );
     const indexBuffer = createIndexBuffer(gpu, indexAttribute);
+
+    let texture: GPUTexture = giveRandomColor(gpu);
+
     return {
         vertexBuffer,
         indexBuffer,
         vertexCount,
         indexCount,
+        texture,
     };
+}
+
+function giveRandomColor(
+    gpu: WebGPUData
+): GPUTexture {
+    const randomColor = new Uint8Array([
+        Math.floor(Math.random() * 256),
+        Math.floor(Math.random() * 256),
+        Math.floor(Math.random() * 256),
+        255
+    ]);
+
+    const randomTexture = gpu.device.createTexture({
+        size: [1, 1],
+        format: 'rgba8unorm',
+        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
+    });
+
+    gpu.device.queue.writeTexture(
+        { texture: randomTexture },
+        randomColor,
+        { bytesPerRow: 256 },
+        [1, 1]
+    );
+
+    return randomTexture;
 }
 
 export function getModelBuffers(
@@ -134,22 +159,32 @@ export function getModelBuffers(
     type: modelType,
     pos?: THREE.Vector3,
     quat?: THREE.Quaternion,
-    scale?: THREE.Vector3,
+    scale?: THREE.Vector3
 ) {
     const entities: Entity[] = [];
 
     group.traverse((obj) => {
         if ((obj as THREE.Mesh).isMesh) {
-            const mesh = getModelBuffersFromTHREEMesh(gpu, obj as THREE.Mesh);
-    
+            const mesh = getModelBuffersFromTHREEMesh(
+                gpu,
+                obj as THREE.Mesh
+            );
+
             const modelMatrix = obj.matrixWorld;
-            pos = pos || new THREE.Vector3()
+            pos = pos || new THREE.Vector3();
             quat = quat || new THREE.Quaternion();
             scale = scale || new THREE.Vector3();
             obj.matrixWorld.decompose(pos, quat, scale);
-            console.log(pos, quat, scale)
+
             entities.push(
-                addEntity(mesh, modelMatrix, type, pos, new THREE.Euler().setFromQuaternion(quat), scale)
+                addEntity(
+                    mesh,
+                    modelMatrix,
+                    type,
+                    pos,
+                    new THREE.Euler().setFromQuaternion(quat),
+                    scale
+                )
             );
         }
     });
@@ -159,7 +194,7 @@ export function getModelBuffers(
 export const vertexBuffers: Iterable<GPUVertexBufferLayout | null | undefined> =
     [
         {
-            arrayStride: Float32Array.BYTES_PER_ELEMENT * 6,
+            arrayStride: Float32Array.BYTES_PER_ELEMENT * 6, // 3 position + 3 normal + 2 texCoord
             attributes: [
                 {
                     shaderLocation: 0,
@@ -170,7 +205,7 @@ export const vertexBuffers: Iterable<GPUVertexBufferLayout | null | undefined> =
                     shaderLocation: 1,
                     offset: Float32Array.BYTES_PER_ELEMENT * 3,
                     format: 'float32x3',
-                },
+                }
             ],
         },
     ];

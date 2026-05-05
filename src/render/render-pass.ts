@@ -36,48 +36,67 @@ function createEntityBindGroups(
     scene: Scene
 ) {
     const entityBindGroups = (entities: Entity[], objectBuffer: GPUBuffer) => {
-        return entities.map((_, i) =>
-            gpu.device.createBindGroup({
-                label: "shadowpass-entityBindGroups" + i,
-                layout: pipeline.getBindGroupLayout(0),
-                entries: [
-                    {
-                        binding: 0,
-                        resource: cameraBuffer
-                    },
-                    {
-                        binding: 1,
-                        resource: {
-                            buffer: objectBuffer,
-                            offset: i * 256,
-                            size: 144,
-                        }
-                    },
-                    {
-                        binding: 2,
-                        resource: staticDepthMap.depthTexture.createView({
-                            dimension: '2d-array',
-                            baseArrayLayer: 0,
-                            arrayLayerCount: staticDepthMap.numOfTextures
-                        })
-                    },
-                    {
-                        binding: 3,
-                        resource: dynamicDepthMap.depthTexture.createView({
-                            dimension: '2d-array',
-                            baseArrayLayer: 0,
-                            arrayLayerCount: dynamicDepthMap.numOfTextures
-                        })
-                    },
-                    {
-                        binding: 4,
-                        resource: gpu.device.createSampler({
-                            compare: 'less'
-                        })
-                    }
-                ]
-            })
 
+        return entities.map((e, i) => {
+                const entity_rc = ComponentsMap.get(e)?.RenderComponent;
+                if (!entity_rc) {
+                    throw "Entity " + e.id + " does not have a render component present.";
+                }
+                return gpu.device.createBindGroup({
+                    label: "shadowpass-entityBindGroups" + i,
+                    layout: pipeline.getBindGroupLayout(0),
+                    entries: [
+                        {
+                            binding: 0,
+                            resource: cameraBuffer
+                        },
+                        {
+                            binding: 1,
+                            resource: {
+                                buffer: objectBuffer,
+                                offset: i * 256,
+                                size: 144,
+                            }
+                        },
+                        {
+                            binding: 2,
+                            resource: staticDepthMap.depthTexture.createView({
+                                dimension: '2d-array',
+                                baseArrayLayer: 0,
+                                arrayLayerCount: staticDepthMap.numOfTextures
+                            })
+                        },
+                        {
+                            binding: 3,
+                            resource: dynamicDepthMap.depthTexture.createView({
+                                dimension: '2d-array',
+                                baseArrayLayer: 0,
+                                arrayLayerCount: dynamicDepthMap.numOfTextures
+                            })
+                        },
+                        {
+                            binding: 4,
+                            resource: gpu.device.createSampler({
+                                compare: 'less'
+                            })
+                        },
+                        {
+                            binding: 5,
+                            resource: entity_rc.mesh.texture?.createView()
+                        },
+                        {
+                            binding: 6,
+                            resource: gpu.device.createSampler({
+                                addressModeU: 'repeat',
+                                addressModeV: 'repeat',
+                                magFilter: 'linear',
+                                minFilter: 'linear',
+                                mipmapFilter: 'linear',
+                            })
+                        }
+                    ]
+                })
+            }
         );
     }
 

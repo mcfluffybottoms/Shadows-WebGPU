@@ -2,12 +2,16 @@
 @group(0) @binding(2) var staticDepthTex: texture_depth_2d_array;
 @group(0) @binding(3) var dynamicDepthTex: texture_depth_2d_array;
 @group(0) @binding(4) var depthSampler: sampler_comparison;
+@group(0) @binding(5) var objTexture: texture_2d<f32>;
+@group(0) @binding(6) var objSampler: sampler;
+
 // // ----- SCENE SETUP ----- // 
 
 struct FragmentIn {
     @location(1) fragPos: vec4<f32>,
     @location(2) fragNorm: vec3<f32>,
-    @location(3) clipPosZ: f32
+    @location(3) clipPosZ: f32,
+    @location(4) uv: vec2<f32>
 }
 
 @group(1) @binding(0) var<uniform> light: SnatchedLightUniforms;
@@ -82,8 +86,8 @@ fn shadowCalculation(in: FragmentIn, normal: vec3f, lightDir: vec3f) -> f32 {
 
     // smoothing
     let halfWindow = i32(config.samplesPerSide) / 2;
-    for(var i = -1 * halfWindow; i <= halfWindow; i++) {
-        for(var j = -1 * halfWindow; j <= halfWindow; j++) {
+    for (var i = -1 * halfWindow; i <= halfWindow; i++) {
+        for (var j = -1 * halfWindow; j <= halfWindow; j++) {
             let offset = vec2f(f32(i), f32(j)) * texelSize;
             let staticSample = textureSampleCompare(
                 staticDepthTex, 
@@ -105,7 +109,7 @@ fn shadowCalculation(in: FragmentIn, normal: vec3f, lightDir: vec3f) -> f32 {
     }
     shadow /= f32(config.samplesPerSide) * f32(config.samplesPerSide);
 
-    if(shadow > 1.0) {
+    if (shadow > 1.0) {
         return 1.0;
     }
     
@@ -114,7 +118,7 @@ fn shadowCalculation(in: FragmentIn, normal: vec3f, lightDir: vec3f) -> f32 {
 
 @fragment
 fn main(in: FragmentIn) -> @location(0) vec4f {
-    let color = vec3f(1.0, 1.0, 1.0);
+    var color = textureSample(objTexture, objSampler, in.uv).rgb;
     let normal = normalize(in.fragNorm);
 
     // light direction
@@ -128,15 +132,18 @@ fn main(in: FragmentIn) -> @location(0) vec4f {
     // shadow
     var shadow = 1.0;
     var cascadeId = getCascadeId(in);
-    if(config.shadowMapOn == 1) {
+    if (config.shadowMapOn == 1) {
         shadow = shadowCalculation(in, normal, lightDir);
     }
 
     // lighting
-    var lighting = color;
+    if (config.shadowMapOn == 1 && config.cascadeLayers == 1) {
+        color = colors[cascadeId];
+    }
 
+    var lighting = color;
     // if need phong light
-    if(config.lightOn == 1) {
+    if (config.lightOn == 1) {
         lighting = (config.lightAmbient + shadow * (diffuse + 0.0)) * color;
     } else {
         lighting = shadow * color;
@@ -144,9 +151,6 @@ fn main(in: FragmentIn) -> @location(0) vec4f {
 
     // if need debug for cascades
     var finalColor = lighting;
-    if(config.shadowMapOn == 1 && config.cascadeLayers == 1) {
-        finalColor = mix(lighting, lighting * colors[cascadeId], 0.3);
-    }
 
     return vec4f(finalColor, 1.0);
 }
