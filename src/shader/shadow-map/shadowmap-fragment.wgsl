@@ -58,49 +58,6 @@ fn getBias(projCoords: vec3f) -> f32 {
 const CONE_ANGLE = 5.0;
 const HEMISPHERE_RADIUS = 5.0;
 
-
-fn ambientComponent(
-    sphereRadius: f32,
-    sphereCenter: vec3<f32>,
-    point: vec3<f32>,
-) -> f32 {
-    let distance = length(sphereCenter - point);
-    return (sphereRadius / distance) * (sphereRadius / distance);
-}
-
-fn dynamicComponent(
-    direction: vec3<f32>,
-    normal: vec3<f32>,
-    sphereCenter: vec3<f32>,
-    sphereRadius: f32,
-    point: vec3<f32>,
-) -> f32 {
-    let distVector: vec3<f32> = sphereCenter - point;
-    let distance = length(distVector);
-    //let radius1: f32 = tan(CONE_ANGLE * 3.14159265 / 180.0) * HEMISPHERE_RADIUS;
-    //let radius2: f32 = (sphereRadius / distance) * sqrt(distance * distance - sphereRadius * sphereRadius);
-    // let cosAngle: f32 = dot(distVector, direction) / (distance * length(direction));
-    // let circlesDistance: f32 = HEMISPHERE_RADIUS * HEMISPHERE_RADIUS * 2 * (1.0 - cosAngle) ;
-
-    // get radius projectred from occcluded sphere
-    let occluderConeSin = sphereRadius / distance;
-    let radius1 = asin(occluderConeSin) * HEMISPHERE_RADIUS;
-
-    // get radius projectred from light source
-    let lightConeAngle = CONE_ANGLE * DEG_TO_RAD;
-    let radius2 = lightConeAngle * HEMISPHERE_RADIUS;
-
-    // get radius projectred from light source
-    let cosAngle: f32 = dot(distVector, direction) / (distance * length(direction));
-    let circlesDistance: f32 = HEMISPHERE_RADIUS * HEMISPHERE_RADIUS * 2 * (1.0 - cosAngle);
-    
-    let distNormalized = normalize(distVector);
-    let dirNormalized = normalize(direction);
-    let distanceAngle = acos(clamp(dot(distNormalized, dirNormalized), -1.0, 1.0));
-    let circlesArcDistance = HEMISPHERE_RADIUS * distanceAngle;
-    return sphericalCapIntersectionApprox(radius1, radius2, circlesArcDistance);
-}
-
 const NUM_TILES = 50;
 const NUM_OCCLUDERS_X = 5;
 const NUM_OCCLUDERS_Z = 5;
@@ -220,11 +177,7 @@ fn main(in: FragmentIn) -> @location(0) vec4f {
     const SPHERE_RADIUS = 1.0;
     let position = vec3f(in.fragPos.x, in.fragPos.y, in.fragPos.z);
     let sphereCenter = vec3f(0.0, 1.0, 0.0);
-    let amb = 1.0 - ambientComponent(
-        SPHERE_RADIUS,
-        sphereCenter,
-        position)
-    - config.lightAmbient;
+    let amb = config.lightAmbient;
 
     // if need phong light
     if(config.lightOn == 1) {
