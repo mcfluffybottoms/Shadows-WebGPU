@@ -34,7 +34,7 @@ export function getApproximatedGeometry(src: ApproxJSON): ApproxedGeometry {
     for(const primitive of src.primitives) {
         if(primitive.type != "sphere") continue;
         spheres.push({ 
-            radius: primitive.transform.scale, 
+            radius: primitive.transform.scale,
             center: new THREE.Vector3(
                 primitive.transform.position[0],
                 primitive.transform.position[1],

@@ -54,6 +54,8 @@ import { Circle, Path, TestScenePath } from '../scene/movement/path';
 
 import carApprox from '../../public/assets/car_approx.json';
 import { getApproximatedGeometry } from '../utils/get-sphere-approximator';
+import { createOccluderBuffers, fillOccluderBuffers, OccluderBuffers } from '../config/occluder-buffer';
+import { AnalyticPassResources, aPass, initAPass } from './analytic-shadow-pass';
 
 export type RenderInfo = {
     // device config
@@ -63,10 +65,12 @@ export type RenderInfo = {
     // buffers
     sceneBuffers: SceneBuffers;
     configBuffers: ConfigBuffers;
+    occluderBuffers: OccluderBuffers;
     // render resources
     depthPassResources: DepthPassResources;
     renderPassResources: RenderPassResources;
     renderDepthPassResources: renderDepthPassResources;
+    aPassResources: AnalyticPassResources
 };
 
 // ----- DEBUG - MAKE A TEST SCENE ----- //
@@ -196,51 +200,35 @@ async function debugSpheresTestScene(
     let staticEntities = [];
     let dynamicEntities: Entity[] = [];
 
-    const plane = createEntityFromGeometry(
-        gpu,
-        new THREE.BoxGeometry(50, 45, 1),
-        modelType.STATIC,
-        new THREE.Vector3(0, 0, 0),
-        new THREE.Euler(-Math.PI / 2, undefined, undefined),
-        1.0
-    );
-    staticEntities.push(plane);
-
-    // add car
     const car = await loadAndAddObject('/assets/low_poly_car.glb');
     if (car) {
-        car.scale.setScalar(0.05);
-        car.position.set(0, 0, 0);
+        car.scale.setScalar(0.01);
+        car.position.set(0, -0.5, 0);
         car.updateMatrixWorld(true);
     } else {
         throw new Error('NO CAR!');
     }
 
-    const carMesh = getModelBuffers(
+    const carMesh = await getModelBuffers(
         gpu,
         car,
-        modelType.STATIC
+        modelType.DYNAMIC
     );
+    dynamicEntities.push(carMesh[0]);
+
+    const plane = createEntityFromGeometry(
+        gpu,
+        new THREE.BoxGeometry(50, 50, 1),
+        modelType.STATIC,
+        new THREE.Vector3(0, -1, 0),
+        new THREE.Euler(-Math.PI / 2, undefined, undefined),
+        1.0
+    );
+    staticEntities.push(plane);
 
     const approxedCar = getApproximatedGeometry(carApprox);
     
     ApproxedGeometries.set(carMesh[0], approxedCar);
-    const scale = 0.01;
-    console.log(approxedCar)
-    for(const sphere of approxedCar) {
-        const sphereMesh = createEntityFromGeometry(
-            gpu,
-            new THREE.SphereGeometry(sphere.radius),
-            modelType.STATIC,
-            new THREE.Vector3(sphere.center.x * scale, sphere.center.y * scale + 1, sphere.center.z * scale),
-            new THREE.Euler(0, 0, undefined),
-            scale
-        );
-        console.log(ComponentsMap.get(sphereMesh));
-        staticEntities.push(sphereMesh);
-    }
-
-    // staticEntities.push(carMesh[0]);
 
     const paths: Path[] = [];
 
@@ -337,6 +325,7 @@ export async function initRender(
     // create and load scene buffers
     const sceneBuffers = createSceneBuffers(gpu, scene);
     const configBuffer = createConfigBuffers(gpu);
+    const occluderBuffers = createOccluderBuffers(gpu);
     fillConfigBuffers(
         gpu,
         configBuffer,
@@ -350,7 +339,14 @@ export async function initRender(
         UI.cascadeLayers,
         UI.lightAmbient,
         UI.coneAngle,
-        UI.hemisphereRadius
+        UI.hemisphereRadius,
+        UI.dirStrength,
+        UI.ambStrength,
+        UI.tilesX,
+        UI.tilesY,
+        UI.seeGrid,
+        UI.directionalOn,
+        UI.ambientOn
     );
     fillSceneBuffers(
         gpu,
@@ -361,6 +357,11 @@ export async function initRender(
         viewProjMatrix,
         splits,
         { camera: true, light: true, staticObj: true, dynamicObj: true }
+    );
+    fillOccluderBuffers(
+        gpu,
+        occluderBuffers,
+        scene
     );
 
     // create resources
@@ -380,12 +381,21 @@ export async function initRender(
         depthPassResources.staticDepthMap,
         depthPassResources.dynamicDepthMap,
         sceneBuffers,
-        configBuffer
+        configBuffer,
+        occluderBuffers
     );
     var renderDepthPassResources = await initRenderDepthPass(
         gpu,
         depthPassResources.staticDepthMap,
         UI.depthMapCascade
+    );
+    var aPassResources = await initAPass(
+        gpu,
+        scene,
+        sceneBuffers,
+        occluderBuffers,
+        sceneBuffers.cameraBuffer,
+        configBuffer.configBuffer
     );
 
     let renderData = {
@@ -394,9 +404,11 @@ export async function initRender(
         scene: scene,
         sceneBuffers: sceneBuffers,
         configBuffers: configBuffer,
+        occluderBuffers: occluderBuffers,
         depthPassResources: depthPassResources,
         renderPassResources: renderPassResources,
         renderDepthPassResources: renderDepthPassResources,
+        aPassResources: aPassResources
     };
 
     updateRenderFromUI(renderData, UI, flags);
@@ -425,7 +437,14 @@ export async function updateRenderFromUI(
             UI.cascadeLayers,
             UI.lightAmbient,
             UI.coneAngle,
-            UI.hemisphereRadius
+            UI.hemisphereRadius,
+            UI.dirStrength,
+            UI.ambStrength,
+            UI.tilesX,
+            UI.tilesY,
+            UI.seeGrid,
+            UI.directionalOn,
+            UI.ambientOn
         );
     }
 
@@ -483,6 +502,7 @@ export async function updateRenderFromUI(
             renderData.scene,
             renderData.depthPassResources.staticDepthMap,
             renderData.depthPassResources.dynamicDepthMap,
+            renderData.occluderBuffers,
             renderData.sceneBuffers
         );
         flags.depthPassSize = false;
@@ -545,21 +565,27 @@ export async function renderFrame(
         { camera: cameraChanged, light: true, staticObj: false, dynamicObj: true }
     );
 
-    if(cameraChanged || uiChanged) await depthPass(
-        renderData.depthPassResources,
+    // if(cameraChanged || uiChanged) await depthPass(
+    //     renderData.depthPassResources,
+    //     encoder,
+    //     renderData.scene,
+    //     UI.numOfCascades,
+    //     true
+    // );
+
+    if(cameraChanged || uiChanged) await aPass(
+        renderData.aPassResources,
         encoder,
-        renderData.scene,
-        UI.numOfCascades,
-        true
+        renderData.scene
     );
 
-    await depthPass(
-        renderData.depthPassResources,
-        encoder,
-        renderData.scene,
-        UI.numOfCascades,
-        false
-    );
+    // await depthPass(
+    //     renderData.depthPassResources,
+    //     encoder,
+    //     renderData.scene,
+    //     UI.numOfCascades,
+    //     false
+    // );
 
     await getMainTexture(renderData, encoder, UI.renderWhat);
     renderData.gpu.device.queue.submit([encoder.finish()]);

@@ -1,7 +1,12 @@
 import * as THREE from 'three/webgpu';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { WebGPUData } from './webgpu-data';
-import { addEntity, Entity, modelType } from '../scene/scene-types';
+import {
+    addEntity,
+    addEntityFromMultiple,
+    Entity,
+    modelType,
+} from '../scene/scene-types';
 import { ModelBuffers } from '../scene/buffer-types';
 import { getApproximatedGeometry } from './get-sphere-approximator';
 
@@ -128,14 +133,12 @@ export function getModelBuffersFromTHREEMesh(
     };
 }
 
-function giveRandomColor(
-    gpu: WebGPUData
-): GPUTexture {
+function giveRandomColor(gpu: WebGPUData): GPUTexture {
     const randomColor = new Uint8Array([
         Math.floor(Math.random() * 256),
         Math.floor(Math.random() * 256),
         Math.floor(Math.random() * 256),
-        255
+        255,
     ]);
 
     const randomTexture = gpu.device.createTexture({
@@ -162,33 +165,30 @@ export function getModelBuffers(
     quat?: THREE.Quaternion,
     scale?: THREE.Vector3
 ) {
-    const entities: Entity[] = [];
+    const meshes: ModelBuffers[] = [];
+    const modelMatrices: THREE.Matrix4[] = [];
+    const positions: THREE.Vector3[] = [];
+    const rotations: THREE.Euler[] = [];
+    const scales: THREE.Vector3[] = [];
 
     group.traverse((obj) => {
         if ((obj as THREE.Mesh).isMesh) {
-            const mesh = getModelBuffersFromTHREEMesh(
-                gpu,
-                obj as THREE.Mesh
-            );
+            const mesh = getModelBuffersFromTHREEMesh(gpu, obj as THREE.Mesh);
 
             const modelMatrix = obj.matrixWorld;
             pos = pos || new THREE.Vector3();
             quat = quat || new THREE.Quaternion();
             scale = scale || new THREE.Vector3();
             obj.matrixWorld.decompose(pos, quat, scale);
-            entities.push(
-                addEntity(
-                    mesh,
-                    modelMatrix,
-                    type,
-                    pos,
-                    new THREE.Euler().setFromQuaternion(quat),
-                    scale
-                )
-            );
+
+            meshes.push(mesh);
+            modelMatrices.push(modelMatrix);
+            positions.push(pos);
+            rotations.push(new THREE.Euler().setFromQuaternion(quat));
+            scales.push(scale);
         }
     });
-    return entities;
+    return [addEntityFromMultiple(meshes, modelMatrices, type, positions, rotations, scales)];
 }
 
 export const vertexBuffers: Iterable<GPUVertexBufferLayout | null | undefined> =
@@ -205,7 +205,7 @@ export const vertexBuffers: Iterable<GPUVertexBufferLayout | null | undefined> =
                     shaderLocation: 1,
                     offset: Float32Array.BYTES_PER_ELEMENT * 3,
                     format: 'float32x3',
-                }
+                },
             ],
         },
     ];
@@ -217,7 +217,7 @@ export function createEntityFromGeometry(
     pos: THREE.Vector3,
     rotation: THREE.Euler,
     scale: number,
-    approximateSrc?: string,
+    approximateSrc?: string
 ) {
     const mesh = new THREE.Mesh(geom);
     mesh.position.set(pos.x, pos.y, pos.z);

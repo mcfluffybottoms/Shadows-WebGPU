@@ -1,5 +1,5 @@
 import * as THREE from "three/webgpu";
-import { ComponentsMap, Entity, Scene } from "./scene-types";
+import { ApproxedGeometries, ComponentsMap, Entity, getComponentCount, modelType, Scene } from "./scene-types";
 import { getVP } from "../utils/camera-utils";
 import { WebGPUData } from "../utils/webgpu-data";
 import { Split } from "./light-types";
@@ -23,7 +23,7 @@ export function createSceneBuffers(
     const { staticEntities, dynamicEntities } = scene;
 
     const cameraBuffer = gpu.device.createBuffer({
-        size: (16 + 16 + 4) * Float32Array.BYTES_PER_ELEMENT,
+        size: (16 + 16 + 16 + 4) * Float32Array.BYTES_PER_ELEMENT,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         label: "cameraBuffer-shadowPass"
     });
@@ -43,12 +43,12 @@ export function createSceneBuffers(
         label: "lightBufferOptions-shadowPass"
     });
     const staticObjectBuffer = gpu.device.createBuffer({
-        size: OFFSET * staticEntities.length,
+        size: OFFSET * getComponentCount(modelType.STATIC),
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         label: "objectBuffer-shadowPass"
     }); // make it much smaller
     const dynamicObjectBuffer = gpu.device.createBuffer({
-        size: OFFSET * dynamicEntities.length,
+        size: OFFSET * getComponentCount(modelType.DYNAMIC),
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         label: "objectBuffer-shadowPass"
     }); // make it much smaller
@@ -85,9 +85,10 @@ export function fillSceneBuffers(
 
     // camera buffer
     if(flags.camera) {
-       const cameraMatrixArray =  new Float32Array(16 + 16 + 4);
+       const cameraMatrixArray =  new Float32Array(16 + 16 + 16 + 4);
         cameraMatrixArray.set(new Float32Array(getVP(camera).elements), 0);
         cameraMatrixArray.set(new Float32Array(camera.matrixWorldInverse.elements), 16);
+        cameraMatrixArray.set(new Float32Array(camera.matrixWorldInverse.invert().elements), 16 + 16);
         cameraMatrixArray.set([camera.position.x, camera.position.y, camera.position.z, 1.0], 16 + 16);
         gpu.device.queue.writeBuffer(cameraBuffer, 0, cameraMatrixArray); 
     }
@@ -118,19 +119,23 @@ export function fillSceneBuffers(
     }
 
     // object buffers
-    const writeToObjectBuffer = (entities: Entity[], objectBuffer: GPUBuffer) => {
-        const modelMatrixArray =  new Float32Array(entities.length * 64);
+    const writeToObjectBuffer = (entities: Entity[], objectBuffer: GPUBuffer, count: number) => {
+        const modelMatrixArray =  new Float32Array(count * 64);
+        let offset = 0;
         for (let i = 0; i < entities.length; i++) {
-            const entity_rc = ComponentsMap.get(entities[i])?.ModelComponent;
-            if (!entity_rc) {
+            const components = ComponentsMap.get(entities[i]);
+            if (!components) {
                 console.warn("Entity " + entities[i].id + " does not have a render component present.");
                 continue;
             }
-            const { modelMatrix } = entity_rc;
-            const normalMatrix = modelMatrix.clone().invert().transpose();
-            modelMatrixArray.set(modelMatrix.toArray(), i * 64);
-            modelMatrixArray.set(normalMatrix.toArray(), i * 64 + 16);
-            modelMatrixArray[i * 64 + 16 + 16 + 1] = entities[i].id;
+            for(let j = 0; j < components.length; j++) {
+                const { modelMatrix } = components[j].ModelComponent;
+                const normalMatrix = modelMatrix.clone().invert().transpose();
+                modelMatrixArray.set(modelMatrix.toArray(), offset * 64);
+                modelMatrixArray.set(normalMatrix.toArray(), offset * 64 + 16);
+                modelMatrixArray[i * 64 + 16 + 16] = entities[i].id;
+                offset++;
+            }
         }
         gpu.device.queue.writeBuffer(
             objectBuffer,
@@ -140,11 +145,11 @@ export function fillSceneBuffers(
     }
 
     if(flags.staticObj) {
-        writeToObjectBuffer(staticEntities, staticObjectBuffer);
+        writeToObjectBuffer(staticEntities, staticObjectBuffer, getComponentCount(modelType.STATIC));
     }
 
     if(flags.dynamicObj) {
-        writeToObjectBuffer(dynamicEntities, dynamicObjectBuffer);
+        writeToObjectBuffer(dynamicEntities, dynamicObjectBuffer, getComponentCount(modelType.DYNAMIC));
     }
 
     return {

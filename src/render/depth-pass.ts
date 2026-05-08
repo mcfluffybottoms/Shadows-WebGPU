@@ -49,30 +49,46 @@ function createEntityBindGroups(
     scene: Scene
 ) {
     const entityBindGroups = (entities: Entity[], objectBuffer: GPUBuffer) => {
-        return entities.map((_, i) =>
-            gpu.device.createBindGroup({
-                label: "depthpass-entityBindGroups" + i,
-                layout: pipeline.getBindGroupLayout(0),
-                entries: [
-                    {
-                        binding: 0,
-                        resource: {
-                            buffer: objectBuffer,
-                            offset: i * 256,
-                            size: 144,
+        const bindGroups = [];
+        let offset = 0;
+        for (const e of entities) {
+            const components = ComponentsMap.get(e);
+            if (!components) {
+                throw (
+                    'Entity ' +
+                    e.id +
+                    ' does not have a render component present.'
+                );
+            }
+            for (const _ of components) {
+                const bindGroup = gpu.device.createBindGroup({
+                    label: "depthpass-entityBindGroups" + e.id + "-" + offset,
+                    layout: pipeline.getBindGroupLayout(0),
+                    entries: [
+                        {
+                            binding: 0,
+                            resource: {
+                                buffer: objectBuffer,
+                                offset: offset * 256,
+                                size: 144,
+                            }
+                        },
+                        {
+                            binding: 1,
+                            resource: {
+                                buffer: configBuffers.configBuffer,
+                                offset: 0,
+                                size: configBuffers.configBufferSize,
+                            }
                         }
-                    },
-                    {
-                        binding: 1,
-                        resource: {
-                            buffer: configBuffers.configBuffer,
-                            offset: 0,
-                            size: configBuffers.configBufferSize,
-                        }
-                    }
-                ]
-            })
-        );
+                    ]
+                })
+                offset++;
+                bindGroups.push(bindGroup);
+            }
+        }
+
+        return bindGroups;
     }
 
     const staticEntityBindGroups = entityBindGroups(scene.staticEntities, staticObjectBuffer);
@@ -188,23 +204,26 @@ export async function depthPass(
 
         depthPass.setPipeline(pipeline);
         depthPass.setBindGroup(1, lightGroup);
+        let offset = 0;
         for (let j = 0; j < entities.length; ++j) {
-            const entity_rc = ComponentsMap.get(entities[j])?.RenderComponent;
-            if (!entity_rc) {
+            const components = ComponentsMap.get(entities[j]);
+            if (!components) {
                 console.warn("Entity " + entities[j].id + " does not have a render component present.");
                 continue;
             }
-            const { mesh } = entity_rc;
-            const group = entityBindGroups[j];
-            depthPass.setBindGroup(0, group);
-            depthPass.setVertexBuffer(0, mesh.vertexBuffer);
-            if (mesh.indexBuffer) {
-                depthPass.setIndexBuffer(mesh.indexBuffer, "uint16");
-                depthPass.drawIndexed(mesh.indexCount);
-            } else {
-                depthPass.draw(mesh.vertexCount);
+            for (let i = 0; i < components.length; i++) {
+                const mesh = components[i].RenderComponent.mesh;
+                const group = entityBindGroups[offset];
+                depthPass.setBindGroup(0, group);
+                depthPass.setVertexBuffer(0, mesh.vertexBuffer);
+                if (mesh.indexBuffer) {
+                    depthPass.setIndexBuffer(mesh.indexBuffer, "uint16");
+                    depthPass.drawIndexed(mesh.indexCount);
+                } else {
+                    depthPass.draw(mesh.vertexCount);
+                }
+                offset++;
             }
-
         }
 
         depthPass.end();

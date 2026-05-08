@@ -29,6 +29,17 @@ export function initUInteractions(): void {
 
     (document.getElementById('lambda') as HTMLInputElement).value = UI.lambda.toString();
 
+    (document.getElementById('coneAngle') as HTMLInputElement).value = UI.coneAngle.toString();
+    (document.getElementById('hemisphereRadius') as HTMLInputElement).value = UI.hemisphereRadius.toString();
+
+    (document.getElementById('dirStrength') as HTMLInputElement).value = UI.dirStrength.toString();
+    (document.getElementById('ambStrength') as HTMLInputElement).value = UI.ambStrength.toString();
+    (document.getElementById('tilesX') as HTMLInputElement).value = UI.tilesX.toString();
+    (document.getElementById('tilesY') as HTMLInputElement).value = UI.tilesY.toString();
+    (document.getElementById('seeGrid') as HTMLInputElement).checked = false;
+    (document.getElementById('directionalOn') as HTMLInputElement).checked = true;
+    (document.getElementById('ambientOn') as HTMLInputElement).checked = true;
+
     hideDivElementById(UI.shadowMap, "depthMapSettings");
     let htmlElement = document.getElementById('depthCascade') as HTMLInputElement;
     htmlElement.max = UI.numOfCascades.toString();
@@ -143,22 +154,58 @@ export function initUInteractions(): void {
     });
 
     // lambda
-    document.getElementById('lambda')?.addEventListener('change', () => {
+    document.getElementById('AnalyticShadowsOn')?.addEventListener('change', () => {
         const shadowMapCheckbox = document.getElementById('AnalyticShadowsOn') as HTMLInputElement;
         UI.analyticShadowsOn = shadowMapCheckbox.checked;
         UIFlags.configChanged = true;
     });
-    document.getElementById('lambda')?.addEventListener('change', () => {
+    document.getElementById('coneAngle')?.addEventListener('change', () => {
         const sizeInput = document.getElementById('coneAngle') as HTMLInputElement;
         UI.coneAngle = sizeInput.valueAsNumber;
         UIFlags.configChanged = true;
     });
-    document.getElementById('lambda')?.addEventListener('change', () => {
+    document.getElementById('hemisphereRadius')?.addEventListener('change', () => {
         const sizeInput = document.getElementById('hemisphereRadius') as HTMLInputElement;
         UI.hemisphereRadius = sizeInput.valueAsNumber;
         UIFlags.configChanged = true;
     });
 
+    document.getElementById('dirStrength')?.addEventListener('change', () => {
+        const sizeInput = document.getElementById('dirStrength') as HTMLInputElement;
+        UI.dirStrength = sizeInput.valueAsNumber;
+        UIFlags.configChanged = true;
+    });
+    document.getElementById('ambStrength')?.addEventListener('change', () => {
+        const sizeInput = document.getElementById('ambStrength') as HTMLInputElement;
+        UI.ambStrength = sizeInput.valueAsNumber;
+        UIFlags.configChanged = true;
+    });
+    document.getElementById('tilesX')?.addEventListener('change', () => {
+        const sizeInput = document.getElementById('tilesX') as HTMLInputElement;
+        UI.tilesX = sizeInput.valueAsNumber;
+        UIFlags.configChanged = true;
+    });
+    document.getElementById('tilesY')?.addEventListener('change', () => {
+        const sizeInput = document.getElementById('tilesY') as HTMLInputElement;
+        UI.tilesY = sizeInput.valueAsNumber;
+        UIFlags.configChanged = true;
+    });
+
+    document.getElementById('seeGrid')?.addEventListener('change', () => {
+        const shadowMapCheckbox = document.getElementById('seeGrid') as HTMLInputElement;
+        UI.seeGrid = shadowMapCheckbox.checked;
+        UIFlags.configChanged = true;
+    });
+    document.getElementById('directionalOn')?.addEventListener('change', () => {
+        const shadowMapCheckbox = document.getElementById('directionalOn') as HTMLInputElement;
+        UI.directionalOn = shadowMapCheckbox.checked;
+        UIFlags.configChanged = true;
+    });
+    document.getElementById('ambientOn')?.addEventListener('change', () => {
+        const shadowMapCheckbox = document.getElementById('ambientOn') as HTMLInputElement;
+        UI.ambientOn = shadowMapCheckbox.checked;
+        UIFlags.configChanged = true;
+    });
 
 }
 

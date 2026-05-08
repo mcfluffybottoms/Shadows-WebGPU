@@ -21,7 +21,7 @@
       </div>
     </details>
     <details>
-      <summary>Render Settings:</summary>
+      <summary>See Depth map:</summary>
       <div class="settings-block">
         <div class="group"></div>
         Render Settings:
@@ -96,6 +96,39 @@
         <br/>
         Hemisphere Radius: 
         <input id="hemisphereRadius" type="number" min="0" max="50" step="1"/>
+        <br/>
+        Directional Strength: 
+        <input id="dirStrength" type="number" min="0" max="2" step="0.05"/>
+        <br/>
+        Ambient Strength: 
+        <input id="ambStrength" type="number" min="0" max="2" step="0.05"/>
+        <br/>
+      </div>
+    </details>
+    <details>
+      <summary>Analytic Shadows Grid:</summary>
+      <div class="settings-block">
+        <div class="group"></div>
+        Number of tiles X:
+        <input id="tilesX" type="number" min="1" max="100" step="1"/>
+        <br/>
+        Number of tiles Y:
+        <input id="tilesY" type="number" min="1" max="100" step="1"/>
+        <br/>
+      </div>
+    </details>
+    <details>
+      <summary>Analytic Shadows Debug:</summary>
+      <div class="settings-block">
+        <div class="group"></div>
+        See grid:
+        <input id="seeGrid" type="checkbox"/>
+        <br/>
+        Directional:
+        <input id="directionalOn" type="checkbox"/>
+        <br/>
+        Ambient:
+        <input id="ambientOn" type="checkbox"/>
         <br/>
       </div>
     </details>

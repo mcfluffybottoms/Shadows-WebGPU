@@ -8,7 +8,7 @@ export type ConfigBuffers = {
 export function createConfigBuffers(
     gpu: WebGPUData
 ) : ConfigBuffers {
-    const configBufferSize = 7 * Uint32Array.BYTES_PER_ELEMENT + 4 * Float32Array.BYTES_PER_ELEMENT;
+    const configBufferSize = 12 * Uint32Array.BYTES_PER_ELEMENT + 6 * Float32Array.BYTES_PER_ELEMENT;
 
     const configBuffer = gpu.device.createBuffer({
         size: configBufferSize,
@@ -34,7 +34,14 @@ export function fillConfigBuffers(
     cascadeLayers: boolean,
     lightAmbient: number,
     coneAngle: number,
-    hemisphereRadius: number
+    hemisphereRadius: number,
+    dirStrength: number,
+    ambStrength: number,
+    tilesX: number,
+    tilesY: number,
+    seeGrid: boolean,
+    directionalOn: boolean,
+    ambientOn: boolean
 ) : ConfigBuffers {
     const { configBuffer } = buffers;
     
@@ -49,11 +56,19 @@ export function fillConfigBuffers(
     uint32View[4] = biasType;
     uint32View[5] = lightOn ? 1 : 0;
     uint32View[6] = cascadeLayers ? 1 : 0;
-    float32View[7] = biasValue;
-    float32View[8] = lightAmbient;
-    float32View[9] = coneAngle;
-    float32View[10] = hemisphereRadius;
+    uint32View[7] = seeGrid ? 1 : 0;
+    uint32View[8] = directionalOn ? 1 : 0;
+    uint32View[9] = ambientOn ? 1 : 0;
+    uint32View[10] = tilesX;
+    uint32View[11] = tilesY;
+    float32View[12] = biasValue;
+    float32View[13] = lightAmbient;
+    float32View[14] = coneAngle;
+    float32View[15] = hemisphereRadius;
+    float32View[16] = dirStrength;
+    float32View[17] = ambStrength;
     
+
     gpu.device.queue.writeBuffer(configBuffer, 0, dataArray);
     
     return buffers;

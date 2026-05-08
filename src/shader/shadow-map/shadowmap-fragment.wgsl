@@ -1,25 +1,26 @@
-const PI = 3.14159265;
-const DEG_TO_RAD = 3.14159265 / 180.0;
-
 // ----- SCENE SETUP ----- // 
 @group(0) @binding(2) var staticDepthTex: texture_depth_2d_array;
 @group(0) @binding(3) var dynamicDepthTex: texture_depth_2d_array;
 @group(0) @binding(4) var depthSampler: sampler_comparison;
 @group(0) @binding(5) var objTexture: texture_2d<f32>;
 @group(0) @binding(6) var objSampler: sampler;
+@group(0) @binding(7) var<storage, read> occluders: array<SphereOccluder>;
+@group(0) @binding(8) var<storage, read_write> occlusionResults: array<OcclusionOutput>;
 
-// // ----- SCENE SETUP ----- // 
+// ----- SCENE SETUP ----- // 
 
 struct FragmentIn {
     @location(1) fragPos: vec4<f32>,
     @location(2) fragNorm: vec3<f32>,
-    @location(3) clipPosZ: f32,
-    @location(4) uv: vec2<f32>
+    @location(3) clipPos: vec4f,
+    @location(4) uv: vec2<f32>,
+    @location(5) entityId: f32,
 }
 
 @group(1) @binding(0) var<uniform> light: SnatchedLightUniforms;
 @group(1) @binding(1) var<uniform> lightOptions: LightOptionsUniforms;
 @group(1) @binding(2) var<uniform> config: Config;
+
 
 // colors for cascade
 const colors: array<vec3f, MAX_CASCADES> = array<vec3f, MAX_CASCADES>(
@@ -38,7 +39,7 @@ fn getCascadeId(in: FragmentIn) -> u32 {
     
     for (var i = 0; i < numOfCascades; i++) {
         let split = lightOptions.splits[i].y;
-        if (abs(in.clipPosZ) < split) {
+        if (abs(in.clipPos.z) < split) {
             return u32(i);
         }
     }
@@ -57,40 +58,6 @@ fn getBias(projCoords: vec3f) -> f32 {
     }
     return bias;
 }
-
-const CONE_ANGLE = 5.0;
-const HEMISPHERE_RADIUS = 5.0;
-
-const NUM_TILES = 50;
-const NUM_OCCLUDERS_X = 5;
-const NUM_OCCLUDERS_Z = 5;
-const WIDTH = 50;
-const HEIGHT = 50;
-const START_X = -25;
-const START_Z = -25;
-const TILES_X = 10;
-const TILES_Z = 5;
-
-fn aabbSphereTest(aabbMin: vec3f, aabbMax: vec3f, sphereCenter: vec3f, sphereRadius: f32) -> bool {
-    var closestPoint: vec3f;
-    closestPoint.x = clamp(sphereCenter.x, aabbMin.x, aabbMax.x);
-    closestPoint.y = clamp(sphereCenter.y, aabbMin.y, aabbMax.y);
-    closestPoint.z = clamp(sphereCenter.z, aabbMin.z, aabbMax.z);
-    
-    let diff = sphereCenter - closestPoint;
-    let distanceSq = dot(diff, diff);
-    return distanceSq <= sphereRadius * sphereRadius;
-}
-// fn shadowCalculation1(in: FragmentIn, normal: vec3f, lightDir: vec3f) -> f32 {
-//     const SPHERE_RADIUS = 1.0;
-//     let position = vec3f(in.fragPos.x, in.fragPos.y, in.fragPos.z);
-//     let sphereCenter = vec3f(0.0, 1.0, 0.0);
-//     let dyn = dynamicComponent(lightDir, normal, sphereCenter, SPHERE_RADIUS, position);
-
-//     let shadow = (1.0 - dyn) ;
-//     return dyn;
-// }
-
 
 fn shadowCalculation(in: FragmentIn, normal: vec3f, lightDir: vec3f) -> f32 {
 
@@ -153,6 +120,126 @@ fn shadowCalculation(in: FragmentIn, normal: vec3f, lightDir: vec3f) -> f32 {
     return shadow;
 }
 
+/*
+    Ambient Aperture Lighting -- Chris Oat, Pedro V. Sander
+*/
+fn sphericalCapIntersectionApprox(
+    radius1: f32,
+    radius2: f32,
+    dist: f32,
+) -> f32 {
+    var area: f32 = 0.0;
+
+    if(dist >= radius1 + radius2) {
+        return area;
+    }
+
+    area = 6.283185308 - 6.283185308 * cos(min(radius1, radius2));
+
+    if(dist > max(radius1, radius2) - min(radius1, radius2)) {
+        let diff = abs(radius1 - radius2);
+        area *= smoothstep(0.0, 1.0, 1.0 - saturate((dist - diff)/(radius1 + radius2 - diff)));
+    }
+
+    return area;
+}
+
+fn dynamicComponent(
+    direction: vec3<f32>,
+    sphereCenter: vec3<f32>,
+    sphereRadius: f32,
+    point: vec3<f32>,
+) -> f32 {
+    let distVector: vec3<f32> = sphereCenter - point;
+    let distance = length(distVector);
+
+    // get radius projectred from occcluded sphere
+    let occluderConeSin = sphereRadius / distance;
+    let radius1 = asin(occluderConeSin) * config.hemisphereRadius;
+
+    // get radius projectred from light source
+    let lightConeAngle = config.coneAngle * DEG_TO_RAD;
+    let radius2 = lightConeAngle * config.hemisphereRadius;
+
+    // get radius projectred from light source
+    let distNormalized = normalize(distVector);
+    let dirNormalized = normalize(direction);
+    let distanceAngle = acos(clamp(dot(distNormalized, dirNormalized), -1.0, 1.0));
+    let circlesArcDistance = config.hemisphereRadius * distanceAngle;
+    return sphericalCapIntersectionApprox(radius1, radius2, circlesArcDistance);
+}
+
+fn ambientComponent(
+    sphereRadius: f32,
+    sphereCenter: vec3<f32>,
+    point: vec3<f32>,
+) -> f32 {
+    let distance = length(sphereCenter - point);
+    return (sphereRadius / distance) * (sphereRadius / distance);
+}
+
+fn shadowCalculation1(in: FragmentIn, normal: vec3f, lightDir: vec3f, config: Config) -> vec2f {
+    let ndc = in.clipPos.xy / in.clipPos.w;
+    let screenPos = vec2<f32>(
+        (ndc.x * 0.5 + 0.5) * f32(SCREEN.x),
+        -((ndc.y * 0.5 - 0.5)) * f32(SCREEN.y),
+    );
+
+    let STEP_X = f32(SCREEN.x) / f32(config.tilesX);
+    let STEP_Y = f32(SCREEN.y) / f32(config.tilesY);
+    let tileX = u32(ceil(screenPos.x / STEP_X));
+    let tileY = u32(ceil(screenPos.y / STEP_Y));
+    let tileId = tileY * config.tilesX + tileX;
+
+    var dyn = 0.0;
+    var amb = 0.0;
+
+    for (var i: u32 = 0; i < u32(occlusionResults[tileId].count.x); i++) {
+        
+        let occluderId = occlusionResults[tileId].indices[i];
+        let occluder = occluders[occluderId];
+        let scale = 0.01;
+        var centerPos_world = vec4f(
+            occluder.center.x * scale, 
+            occluder.center.y * scale, 
+            occluder.center.z * scale, 
+            1.0
+        );
+        centerPos_world.y = centerPos_world.y + 0.00;
+
+        if (config.directionalOn == 1) {
+            let loc_dyn = dynamicComponent(
+                lightDir,
+                centerPos_world.xyz,
+                occluder.center.w * scale,
+                in.fragPos.xyz
+            );
+            if (dyn == 0.0 && loc_dyn > 0) {
+                dyn = loc_dyn;
+            }
+            else if (loc_dyn > 0) {
+                dyn += loc_dyn;
+            }
+        }
+
+        if (config.ambientOn == 1) {
+            let loc_amb = ambientComponent(
+                occluder.center.w * scale,
+                centerPos_world.xyz,
+                in.fragPos.xyz
+            );
+            if (amb == 0.0 && loc_amb > 0) {
+                amb = loc_amb;
+            }
+            else if (loc_amb > 0) {
+                amb += loc_amb;
+            }
+        }
+    }
+
+    return vec2f(1.0 - dyn, amb);
+}
+
 @fragment
 fn main(in: FragmentIn) -> @location(0) vec4f {
     var color = textureSample(objTexture, objSampler, in.uv).rgb;
@@ -168,10 +255,17 @@ fn main(in: FragmentIn) -> @location(0) vec4f {
 
     // shadow
     var shadow = 1.0;
+    var amb = 1.0;
     var cascadeId = getCascadeId(in);
     if (config.shadowMapOn == 1) {
-        shadow = shadowCalculation(in, normal, lightDir);
+        let components = shadowCalculation1(in, normal, lightDir, config);
+        if (in.entityId != 0) {
+            shadow = components[0] * config.dirStrength;
+            amb -= components[1] * config.ambStrength;
+        }
+        
     } 
+    let SSS = shadowCalculation(in, normal, lightDir);
 
     // lighting
     if (config.shadowMapOn == 1 && config.cascadeLayers == 1) {
@@ -180,23 +274,33 @@ fn main(in: FragmentIn) -> @location(0) vec4f {
 
     var lighting = color;
 
-    // ambient
-    const SPHERE_RADIUS = 1.0;
-    let position = vec3f(in.fragPos.x, in.fragPos.y, in.fragPos.z);
-    let sphereCenter = vec3f(0.0, 1.0, 0.0);
-    let amb = config.lightAmbient;
-
-    // if need phong light
+    // light
     if(config.lightOn == 1) {
         lighting = (amb + shadow * (diffuse + 0.0)) * color;
     } else {
         lighting = shadow * color;
     }
 
-    // if need debug for cascades
+    // DEBUG - cascades
     var finalColor = lighting;
     if(config.shadowMapOn == 1 && config.cascadeLayers == 1) {
         finalColor = mix(lighting, lighting * colors[cascadeId], 0.7);
+    }
+
+    // DEBUG - SHOW WHICH TILES HAVE OCCLUDERS
+    if (config.seeGrid == 1) {
+        let ndc = in.clipPos.xyz / in.clipPos.w;
+        let screenPos = vec2<f32>(
+            (ndc.x * 0.5 + 0.5) * f32(SCREEN.x),
+            (-ndc.y * 0.5 + 0.5) * f32(SCREEN.y)
+        );
+
+        let STEP_X = f32(SCREEN.x) / f32(config.tilesX);
+        let STEP_Y = f32(SCREEN.y) / f32(config.tilesY);
+        let tileX = u32(ceil(screenPos.x / STEP_X));
+        let tileY = u32(ceil(screenPos.y / STEP_Y));
+        let tileId = tileY * config.tilesX + tileX;
+        return vec4f(occlusionResults[tileId].count.xyz / 64.0, 1.0);
     }
 
     return vec4f(finalColor, 1.0);

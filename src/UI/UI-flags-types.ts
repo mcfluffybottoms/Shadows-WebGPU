@@ -32,6 +32,13 @@ export type UIConfig = {
     analyticShadowsOn: boolean;
     coneAngle: number;
     hemisphereRadius: number;
+    dirStrength: number;
+    ambStrength: number;
+    tilesX: number;
+    tilesY: number;
+    seeGrid: boolean;
+    directionalOn: boolean;
+    ambientOn: boolean;
 }
 export let UI: UIConfig = {
     // change view
@@ -58,7 +65,14 @@ export let UI: UIConfig = {
     // analytic shadows
     analyticShadowsOn: true,
     coneAngle: 15.0,
-    hemisphereRadius: 5.0,
+    hemisphereRadius: 1.0,
+    dirStrength: 1.0,
+    ambStrength: 1.0,
+    tilesX: 50,
+    tilesY: 50,
+    seeGrid: false,
+    directionalOn: true,
+    ambientOn: true
 };
 
 export type UIFlags = {

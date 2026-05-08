@@ -5,6 +5,7 @@ import { Path } from './movement/path';
 import { CameraConfig } from '../utils/camera-utils';
 import { ApproxedGeometry, getApproximatedGeometry } from '../utils/get-sphere-approximator';
 
+// for render - transform and render per mesh
 export type Entity = {
     id: number;
 };
@@ -21,22 +22,6 @@ export type ModelComponent = {
     rotation: THREE.Euler;
     scale: THREE.Vector3;
 };
-
-// export function getModelMatrix(m: ModelComponent) {
-//     if (!m.position || !m.rotation || !m.scale) {
-//         return m.modelMatrix;
-//     }
-
-//     const matrix = new THREE.Matrix4();
-//     matrix.compose(
-//         m.position,
-//         new THREE.Quaternion().setFromEuler(
-//             new THREE.Euler(m.rotation.x, m.rotation.y, m.rotation.z, 'XYZ')
-//         ),
-//         m.scale
-//     );
-//     return matrix;
-// }
 
 export function getModelMatrix(
     position: THREE.Vector3,
@@ -62,10 +47,9 @@ type Components = {
 };
 
 // ecs for storing rendering data
-export const ComponentsMap: Map<Entity, Components> = new Map();
+export const ComponentsMap: Map<Entity, Components[]> = new Map();
 export const ApproxedGeometries: Map<Entity, ApproxedGeometry> = new Map();
 
-// TODO - add camera
 export type Scene = {
     paths: Path[];
     cameraConfig: CameraConfig;
@@ -81,6 +65,23 @@ function generateID() {
     return id;
 }
 
+let numberOfStaticComponents = 0;
+let numberOfDynamicComponents = 0;
+function updateComponentCount(type: modelType) {
+    if(type == modelType.DYNAMIC) {
+        numberOfDynamicComponents++;
+    } else {
+        numberOfStaticComponents++;
+    }
+}
+export function getComponentCount(type: modelType) {
+    if(type == modelType.DYNAMIC) {
+        return numberOfDynamicComponents;
+    } else {
+        return numberOfStaticComponents;
+    }
+}
+
 export function addEntity(
     mesh: ModelBuffers,
     modelMatrix: THREE.Matrix4,
@@ -90,13 +91,42 @@ export function addEntity(
     scale: THREE.Vector3
 ): Entity {
     const entity = { id: generateID() };
-    ComponentsMap.set(entity, {
+
+    updateComponentCount(type);
+
+    ComponentsMap.set(entity, [{
         RenderComponent: { mesh },
         ModelComponent: { modelMatrix, type, position, rotation, scale },
-    });
-    ComponentsMap.set(entity, {
-        RenderComponent: { mesh },
-        ModelComponent: { modelMatrix, type, position, rotation, scale },
-    });
+    }]);
     return entity;
 }
+
+export function addEntityFromMultiple(
+    meshes: ModelBuffers[],
+    modelMatrices: THREE.Matrix4[],
+    type: modelType,
+    position: THREE.Vector3[],
+    rotation: THREE.Euler[],
+    scale: THREE.Vector3[]
+): Entity {
+    const entity = { id: generateID() };
+    let components = [];
+    for (let i = 0; i < meshes.length; i++) {
+        updateComponentCount(type);
+        components.push({
+            RenderComponent: { mesh: meshes[i] },
+            ModelComponent: { 
+                modelMatrix: modelMatrices[i], 
+                type, 
+                position: 
+                position[i], 
+                rotation: 
+                rotation[i], 
+                scale: scale[i] 
+            },
+        });
+    }
+    ComponentsMap.set(entity, components);
+    return entity;
+}
+
