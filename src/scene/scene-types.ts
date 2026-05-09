@@ -67,6 +67,10 @@ function generateID() {
 
 let numberOfStaticComponents = 0;
 let numberOfDynamicComponents = 0;
+let numberOfApproxedGeometries = 0;
+export function updateApproxedGeometries() {
+    numberOfApproxedGeometries++;
+}
 function updateComponentCount(type: modelType) {
     if(type == modelType.DYNAMIC) {
         numberOfDynamicComponents++;
@@ -80,6 +84,9 @@ export function getComponentCount(type: modelType) {
     } else {
         return numberOfStaticComponents;
     }
+}
+export function getApproxedGeometriesCount() {
+    return numberOfApproxedGeometries;
 }
 
 export function addEntity(

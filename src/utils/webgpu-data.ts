@@ -41,3 +41,27 @@ export async function getWebGPU(): Promise<WebGPUData> {
 
     return { canvas, adapter, device, context, defaultTexture };
 }
+
+export async function logGPUBuffer(gpu: WebGPUData, buffer: GPUBuffer, byteSize: number, format = Float32Array) {
+  const stagingBuffer = gpu.device.createBuffer({
+    size: byteSize,
+    usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
+  });
+  
+  const commandEncoder = gpu.device.createCommandEncoder();
+  commandEncoder.copyBufferToBuffer(buffer, 0, stagingBuffer, 0, byteSize);
+  
+  gpu.device.queue.submit([commandEncoder.finish()]);
+
+  await stagingBuffer.mapAsync(GPUMapMode.READ);
+
+  const arrayBuffer = stagingBuffer.getMappedRange();
+  const data = new format(arrayBuffer);
+
+  console.log('Buffer data:', Array.from(data));
+
+  stagingBuffer.unmap();
+  stagingBuffer.destroy();
+  
+  return data;
+}

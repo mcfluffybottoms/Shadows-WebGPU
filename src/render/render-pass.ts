@@ -33,7 +33,6 @@ function createEntityBindGroups(
     cameraBuffer: GPUBuffer,
     staticDepthMap: DepthMap,
     dynamicDepthMap: DepthMap,
-    occluderBuffers: OccluderBuffers,
     scene: Scene
 ) {
     const entityBindGroups = (entities: Entity[], objectBuffer: GPUBuffer) => {
@@ -100,16 +99,7 @@ function createEntityBindGroups(
                                 minFilter: 'linear',
                                 mipmapFilter: 'linear',
                             }),
-                        },
-                        {
-                            binding: 7,
-                            resource: occluderBuffers.buffer,
-                            size: occluderBuffers.size,
-                        },
-                        {
-                            binding: 8,
-                            resource: occluderBuffers.outputBuffer,
-                        },
+                        }
                     ],
                 });
                 offset++;
@@ -137,7 +127,8 @@ function createLightBindGroups(
     pipeline: GPURenderPipeline,
     snatchedLightBuffer: GPUBuffer,
     lightBufferOptions: GPUBuffer,
-    configBuffers: ConfigBuffers
+    configBuffers: ConfigBuffers,
+    occluderBuffers: OccluderBuffers
 ) {
     const lightBindGroups = gpu.device.createBindGroup({
         label: 'depthpass-lightBindGroups',
@@ -162,6 +153,22 @@ function createLightBindGroups(
                     offset: 0,
                     size: configBuffers.configBufferSize,
                 },
+            },
+            {
+                binding: 3,
+                resource: { buffer: occluderBuffers.buffer },
+            },
+            {
+                binding: 4,
+                resource: { buffer: occluderBuffers.outputBuffer },
+            },
+            {
+                binding: 5,
+                resource: { buffer: occluderBuffers.modelMatrixBuffer },
+            },
+            {
+                binding: 6,
+                resource: { buffer: occluderBuffers.idBuffer },
             },
         ],
     });
@@ -228,7 +235,8 @@ export async function initRenderPass(
         pipeline,
         snatchedLightBuffer,
         lightBufferOptions,
-        configBuffers
+        configBuffers,
+        occluderBuffers
     );
     const { staticEntityBindGroups, dynamicEntityBindGroups } =
         createEntityBindGroups(
@@ -239,7 +247,6 @@ export async function initRenderPass(
             cameraBuffer,
             staticDepthmap,
             dynamicDepthmap,
-            occluderBuffers,
             scene
         );
     const sceneDepthTexture = createSceneDepthTexture(gpu);
@@ -341,7 +348,8 @@ export function onRenderPassLightChange(
     gpu: WebGPUData,
     resources: RenderPassResources,
     buffers: SceneBuffers,
-    configBuffers: ConfigBuffers
+    configBuffers: ConfigBuffers,
+    occluderBuffers: OccluderBuffers
 ) {
     const { snatchedLightBuffer, lightBufferOptions } = buffers;
     resources.lightBindGroups = createLightBindGroups(
@@ -349,7 +357,8 @@ export function onRenderPassLightChange(
         resources.pipeline,
         snatchedLightBuffer,
         lightBufferOptions,
-        configBuffers
+        configBuffers,
+        occluderBuffers
     );
 }
 /*
@@ -362,7 +371,6 @@ export function onRenderPassDepthMapChange(
     scene: Scene,
     staticDepthMap: DepthMap,
     dynamicDepthMap: DepthMap,
-    occluderBuffers: OccluderBuffers,
     buffers: SceneBuffers
 ) {
     const { cameraBuffer, staticObjectBuffer, dynamicObjectBuffer } = buffers;
@@ -375,7 +383,6 @@ export function onRenderPassDepthMapChange(
             cameraBuffer,
             staticDepthMap,
             dynamicDepthMap,
-            occluderBuffers,
             scene
         );
     resources.staticEntityBindGroups = staticEntityBindGroups;
@@ -390,7 +397,6 @@ export function onRenderPassSceneChange(
     dynamicDepthMap: DepthMap,
     resources: RenderPassResources,
     scene: Scene,
-    occluderBuffers: OccluderBuffers,
     buffers: SceneBuffers
 ) {
     const { cameraBuffer, staticObjectBuffer, dynamicObjectBuffer } = buffers;
@@ -403,7 +409,6 @@ export function onRenderPassSceneChange(
             cameraBuffer,
             staticDepthMap,
             dynamicDepthMap,
-            occluderBuffers,
             scene
         );
     resources.staticEntityBindGroups = staticEntityBindGroups;

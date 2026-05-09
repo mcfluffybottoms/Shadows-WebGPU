@@ -1,66 +1,50 @@
 import * as THREE from "three/webgpu";
 import { WebGPUData } from "../utils/webgpu-data";
-import { vertexBuffers } from "../utils/loader";
 
 import occludersShadowPass from '../shader/analytic-shadows/dynamic-intersection.wgsl?raw';
-import { ComponentsMap, Entity, Scene } from "../scene/scene-types";
-import { ConfigBuffers } from "../config/config-buffers";
+import { Scene } from "../scene/scene-types";
 import { importShaderCode } from "../utils/import-shader-code";
 import { SceneBuffers } from "../scene/scene-buffers";
 import { OccluderBuffers } from "../config/occluder-buffer";
 import { UI } from "../UI/UI-flags-types";
+import { DepthMap } from "./depth-pass";
 
 const analyticShadowsPass = await importShaderCode(occludersShadowPass);
-
-// grid size
-// cone angle
-// ambient component - cosine weighted percentage hemisphere occluded
-// directional component - trace to point by direction, get  + intercestions with sphere
-// precoimpute using monte carlo for directional component -store in a texture
-
 
 export interface AnalyticPassResources {
     pipeline: GPUComputePipeline;
     lightBindGroup: GPUBindGroup;
-    entityBindGroups: GPUBindGroup[];
+    entityBindGroups: GPUBindGroup;
 };
-
-
-/*
-@group(0) @binding(0) var<storage, read> occluders: array<SphereOccluder>;
-@group(0) @binding(1) var<storage, read_write> occlusionResults: array<OcclusionOutput>;
-@group(1) @binding(0) var<uniform> lightOptions: LightOptionsUniforms;
-*/
 
 function createEntityBindGroups(
     gpu: WebGPUData,
     pipeline: GPUComputePipeline,
-    objectBuffer: GPUBuffer,
     occluderBuffers: OccluderBuffers,
     scene: Scene
 )  {
-    const bindGroups = [];
-    let offset = 0;
-    for (const e of scene.dynamicEntities) {
-        const bindGroup = gpu.device.createBindGroup({
-            label: "analyticPass-entityBindGroups" + e.id,
-            layout: pipeline.getBindGroupLayout(0),
-            entries: [
-                {
-                    binding: 0,
-                    resource: { buffer: occluderBuffers.buffer },
-                },
-                {
-                    binding: 1,
-                    resource: { buffer: occluderBuffers.outputBuffer },
-                },
-            ]
-        })
-        offset++;
-        bindGroups.push(bindGroup);
-    }
-
-    return bindGroups;
+    return gpu.device.createBindGroup({
+        label: "analyticPass-entityBindGroups",
+        layout: pipeline.getBindGroupLayout(0),
+        entries: [
+            {
+                binding: 0,
+                resource: { buffer: occluderBuffers.buffer },
+            },
+            {
+                binding: 1,
+                resource: { buffer: occluderBuffers.modelMatrixBuffer },
+            },
+            {
+                binding: 2,
+                resource: { buffer: occluderBuffers.outputBuffer },
+            },
+            {
+                binding: 3,
+                resource: { buffer: occluderBuffers.idBuffer },
+            },
+        ]
+    });
 }
 
 function createLightBindGroups(
@@ -68,7 +52,8 @@ function createLightBindGroups(
     pipeline: GPUComputePipeline,
     lightBufferOptions: GPUBuffer,
     cameraBuffer: GPUBuffer,
-    configBuffer: GPUBuffer
+    configBuffer: GPUBuffer,
+    depthMap: DepthMap
 ) {
     const lightBindGroups = gpu.device.createBindGroup({
         label: "analyticPass-lightBindGroups",
@@ -85,6 +70,20 @@ function createLightBindGroups(
             {
                 binding: 2,
                 resource: { buffer: configBuffer }
+            },
+            {
+                binding: 3,
+                resource: depthMap.depthTexture.createView()
+            },
+            {
+                binding: 4,
+                resource: gpu.device.createSampler({
+                    addressModeU: 'repeat',
+                    addressModeV: 'repeat',
+                    magFilter: 'linear',
+                    minFilter: 'linear',
+                    mipmapFilter: 'linear',
+                })
             }
         ]
     });
@@ -98,7 +97,8 @@ export async function initAPass(
     buffers: SceneBuffers,
     occluderBuffers: OccluderBuffers,
     camera: GPUBuffer,
-    configBuffer: GPUBuffer
+    configBuffer: GPUBuffer,
+    depthMap: DepthMap
 ): Promise<AnalyticPassResources> {
 
     const pipeline = gpu.device.createComputePipeline({
@@ -113,11 +113,8 @@ export async function initAPass(
         },
     });
 
-    const lightBindGroup = createLightBindGroups(gpu, pipeline, buffers.lightBufferOptions, camera, configBuffer);
-    const entityBindGroups = createEntityBindGroups(gpu, pipeline, buffers.staticObjectBuffer,
-        occluderBuffers,
-        scene
-    );
+    const lightBindGroup = createLightBindGroups(gpu, pipeline, buffers.lightBufferOptions, camera, configBuffer, depthMap);
+    const entityBindGroups = createEntityBindGroups(gpu, pipeline, occluderBuffers, scene);
 
     return { pipeline, lightBindGroup, entityBindGroups };
 }
@@ -128,9 +125,6 @@ export async function aPass(
     scene: Scene
 ) {
     const { pipeline, lightBindGroup, entityBindGroups } = resources;
-
-    let entities: Entity[];
-    entities = scene.staticEntities;
 
     // begin compute pass
     const computePass = encoder.beginComputePass({
@@ -145,11 +139,8 @@ export async function aPass(
     const WORKGROUP_X = UI.tilesX;
     const WORKGROUP_Y = UI.tilesY;
 
-    for (let j = 0; j < 1; ++j) {
-        const group = entityBindGroups[j];
-        computePass.setBindGroup(0, group);
-        computePass.dispatchWorkgroups(WORKGROUP_X, WORKGROUP_Y, 1);
-    }
+    computePass.setBindGroup(0, entityBindGroups);
+    computePass.dispatchWorkgroups(WORKGROUP_X, WORKGROUP_Y, 1);
 
     computePass.end();
 }

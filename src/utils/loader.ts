@@ -162,7 +162,7 @@ export function getModelBuffers(
     group: THREE.Group,
     type: modelType,
     pos?: THREE.Vector3,
-    quat?: THREE.Quaternion,
+    rotation?: THREE.Euler,
     scale?: THREE.Vector3
 ) {
     const meshes: ModelBuffers[] = [];
@@ -177,14 +177,14 @@ export function getModelBuffers(
 
             const modelMatrix = obj.matrixWorld;
             pos = pos || new THREE.Vector3();
-            quat = quat || new THREE.Quaternion();
+            rotation = rotation || new THREE.Euler();
             scale = scale || new THREE.Vector3();
-            obj.matrixWorld.decompose(pos, quat, scale);
+            obj.matrixWorld.decompose(pos, new THREE.Quaternion().setFromEuler(rotation), scale);
 
             meshes.push(mesh);
             modelMatrices.push(modelMatrix);
             positions.push(pos);
-            rotations.push(new THREE.Euler().setFromQuaternion(quat));
+            rotations.push(rotation);
             scales.push(scale);
         }
     });

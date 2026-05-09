@@ -88,7 +88,7 @@ export function fillSceneBuffers(
        const cameraMatrixArray =  new Float32Array(16 + 16 + 16 + 4);
         cameraMatrixArray.set(new Float32Array(getVP(camera).elements), 0);
         cameraMatrixArray.set(new Float32Array(camera.matrixWorldInverse.elements), 16);
-        cameraMatrixArray.set(new Float32Array(camera.matrixWorldInverse.invert().elements), 16 + 16);
+        cameraMatrixArray.set(new Float32Array(camera.projectionMatrixInverse.elements), 16 + 16);
         cameraMatrixArray.set([camera.position.x, camera.position.y, camera.position.z, 1.0], 16 + 16);
         gpu.device.queue.writeBuffer(cameraBuffer, 0, cameraMatrixArray); 
     }
@@ -133,10 +133,11 @@ export function fillSceneBuffers(
                 const normalMatrix = modelMatrix.clone().invert().transpose();
                 modelMatrixArray.set(modelMatrix.toArray(), offset * 64);
                 modelMatrixArray.set(normalMatrix.toArray(), offset * 64 + 16);
-                modelMatrixArray[i * 64 + 16 + 16] = entities[i].id;
+                modelMatrixArray[offset * 64 + 16 + 16] = entities[i].id;
                 offset++;
             }
         }
+
         gpu.device.queue.writeBuffer(
             objectBuffer,
             0,
