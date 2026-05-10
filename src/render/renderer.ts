@@ -565,11 +565,6 @@ export async function updateRenderFromUI(
 
     // debug option
     if (flags.depthMapCascade) {
-        renderData.renderDepthPassResources = await initRenderDepthPass(
-            renderData.gpu,
-            renderData.depthPassForAPassResources.dynamicDepthMap,
-            UI.depthMapCascade
-        );
         flags.depthMapCascade = false;
     }
 

@@ -1,9 +1,9 @@
 @group(0) @binding(0) var<uniform> object: ObjectUniforms;
 @group(0) @binding(1) var<uniform> config: Config;
-@group(1) @binding(0) var<uniform> viewProjMatrix: mat4x4<f32>;
+@group(1) @binding(0) var<uniform> light: LightUniforms;
 @vertex
 fn main(v: Vertex, @builtin(instance_index) cascade: u32) -> @builtin(position) vec4f {
-    var clipPos = viewProjMatrix * object.modelMatrix * vec4f(v.position, 1.0);
+    var clipPos = light.viewProjMatrix * object.modelMatrix * vec4f(v.position, 1.0);
     
     if(config.shadowMapOn == 0) {}
 

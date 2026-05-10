@@ -172,8 +172,6 @@ export async function depthPassAll(
     let entityBindGroups: GPUBindGroup[];
     let depthMap: DepthMap = dynamicDepthMap;
 
-    let numberEntities = scene.dynamicEntities.length + scene.staticEntities.length;
-
     // begin render pass
     for (let i = 0; i < numOfCascades; ++i) {
         const depthPass = encoder.beginRenderPass({
