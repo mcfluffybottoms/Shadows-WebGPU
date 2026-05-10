@@ -151,27 +151,84 @@ export class Path {
             targetPoint.y - this.currentPosition.y
         );
         
-        const stepDistance = Math.min(distanceToTarget, this.speed * deltaTime);
-        const t = distanceToTarget === 0 ? 0 : stepDistance / distanceToTarget;
+        let stepDistance = Math.min(distanceToTarget, this.speed * deltaTime);
+        let remainingDelta = stepDistance;
         
-        this.currentPosition = Path.lerp(this.currentPosition, targetPoint, t);
+        // Calculate movement delta
+        const delta = { x: 0, y: 0 };
+        
+        if (distanceToTarget > 0) {
+            const direction = {
+                x: (targetPoint.x - this.currentPosition.x) / distanceToTarget,
+                y: (targetPoint.y - this.currentPosition.y) / distanceToTarget
+            };
+            
+            delta.x = direction.x * stepDistance;
+            delta.y = direction.y * stepDistance;
+        }
+        
+        // Apply delta movement
+        this.currentPosition = {
+            x: this.currentPosition.x + delta.x,
+            y: this.currentPosition.y + delta.y
+        };
+        
+        // Handle reaching the target point
         if (stepDistance >= distanceToTarget) {
             this.pointID = (this.pointID + 1) % this.path.length;
+            remainingDelta = stepDistance - distanceToTarget;
+            
+            // Apply remaining delta to next segment if needed
+            if (remainingDelta > 0 && this.path.length > 0) {
+                this.applyRemainingMovement(remainingDelta);
+            }
         }
 
+        const t = distanceToTarget === 0 ? 0 : stepDistance / distanceToTarget;
+        
         return {
             type: EventType.MOVE,
             entity: this.entity,
             value: {
-                angle: this.rotate(t),
-                point: this.currentPosition
+                angle: this.rotate(delta, t),
+                point: this.currentPosition,
+                delta: delta
             },
         };
     }
 
-    private rotate(t: number) {
-        const targetPoint = this.path[this.pointID];
-        const dir = new THREE.Vector3(targetPoint.x - this.currentPosition.x, 0, targetPoint.y - this.currentPosition.y).normalize();
+    private applyRemainingMovement(remainingDelta: number) {
+        const nextTargetPoint = this.path[this.pointID];
+        const distanceToNextTarget = Math.hypot(
+            nextTargetPoint.x - this.currentPosition.x,
+            nextTargetPoint.y - this.currentPosition.y
+        );
+        
+        const stepDistance = Math.min(distanceToNextTarget, remainingDelta);
+        
+        if (distanceToNextTarget > 0) {
+            const direction = {
+                x: (nextTargetPoint.x - this.currentPosition.x) / distanceToNextTarget,
+                y: (nextTargetPoint.y - this.currentPosition.y) / distanceToNextTarget
+            };
+            
+            this.currentPosition = {
+                x: this.currentPosition.x + direction.x * stepDistance,
+                y: this.currentPosition.y + direction.y * stepDistance
+            };
+        }
+        
+        if (stepDistance >= distanceToNextTarget) {
+            this.pointID = (this.pointID + 1) % this.path.length;
+        }
+    }
+
+    private rotate(delta: Point, t: number) {
+        if (delta.x === 0 && delta.y === 0) {
+            return this.currentRotation;
+        }
+        
+        const dir = new THREE.Vector3(delta.x, 0, delta.y).normalize();
         let rotz = Math.atan2(dir.x, dir.z);
         this.currentRotation = Path.lerpNumber(this.currentRotation, rotz, t);
         return this.currentRotation;

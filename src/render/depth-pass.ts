@@ -159,6 +159,96 @@ export async function initDepthPass(
     return { pipeline, lightBindGroups, staticEntityBindGroups, dynamicEntityBindGroups, dynamicDepthMap, staticDepthMap };
 }
 
+export async function depthPassAll(
+    resources: DepthPassResources,
+    encoder: GPUCommandEncoder,
+    scene: Scene,
+    numOfCascades: number
+) {
+    // get uniform values for depth map render pipeline
+    const { pipeline, lightBindGroups, dynamicDepthMap } = resources;
+
+    let entities: Entity[];
+    let entityBindGroups: GPUBindGroup[];
+    let depthMap: DepthMap = dynamicDepthMap;
+
+    let numberEntities = scene.dynamicEntities.length + scene.staticEntities.length;
+
+    // begin render pass
+    for (let i = 0; i < numOfCascades; ++i) {
+        const depthPass = encoder.beginRenderPass({
+            depthStencilAttachment: {
+                view: depthMap.depthTexture.createView(
+                    {
+                        baseArrayLayer: i,
+                        arrayLayerCount: 1,
+                        dimension: '2d'
+                    }
+                ),
+                depthClearValue: 1.0,
+                depthLoadOp: 'clear',
+                depthStoreOp: 'store'
+            },
+            colorAttachments: []
+        });
+
+        const lightGroup = lightBindGroups[i];
+
+        depthPass.setPipeline(pipeline);
+        depthPass.setBindGroup(1, lightGroup);
+
+        let offset = 0;
+        entities = scene.staticEntities;
+        entityBindGroups = resources.staticEntityBindGroups;;
+        for (let j = 0; j < entities.length; ++j) {
+            const components = ComponentsMap.get(entities[j]);
+            if (!components) {
+                console.warn("Entity " + entities[j].id + " does not have a render component present.");
+                continue;
+            }
+            for (let k = 0; k < components.length; k++) {
+                const mesh = components[k].RenderComponent.mesh;
+                const group = entityBindGroups[offset];
+                depthPass.setBindGroup(0, group);
+                depthPass.setVertexBuffer(0, mesh.vertexBuffer);
+                if (mesh.indexBuffer) {
+                    depthPass.setIndexBuffer(mesh.indexBuffer, "uint16");
+                    depthPass.drawIndexed(mesh.indexCount);
+                } else {
+                    depthPass.draw(mesh.vertexCount);
+                }
+                offset++;
+            }
+        }
+
+        offset = 0;
+        entities = scene.dynamicEntities;
+        entityBindGroups = resources.dynamicEntityBindGroups;
+        for (let j = 0; j < entities.length; ++j) {
+            const components = ComponentsMap.get(entities[j]);
+            if (!components) {
+                console.warn("Entity " + entities[j].id + " does not have a render component present.");
+                continue;
+            }
+            for (let k = 0; k < components.length; k++) {
+                const mesh = components[k].RenderComponent.mesh;
+                const group = entityBindGroups[offset];
+                depthPass.setBindGroup(0, group);
+                depthPass.setVertexBuffer(0, mesh.vertexBuffer);
+                if (mesh.indexBuffer) {
+                    depthPass.setIndexBuffer(mesh.indexBuffer, "uint16");
+                    depthPass.drawIndexed(mesh.indexCount);
+                } else {
+                    depthPass.draw(mesh.vertexCount);
+                }
+                offset++;
+            }
+        }
+
+        depthPass.end();
+    }
+}
+
 export async function depthPass(
     resources: DepthPassResources,
     encoder: GPUCommandEncoder,
@@ -211,8 +301,8 @@ export async function depthPass(
                 console.warn("Entity " + entities[j].id + " does not have a render component present.");
                 continue;
             }
-            for (let i = 0; i < components.length; i++) {
-                const mesh = components[i].RenderComponent.mesh;
+            for (let k = 0; k < components.length; k++) {
+                const mesh = components[k].RenderComponent.mesh;
                 const group = entityBindGroups[offset];
                 depthPass.setBindGroup(0, group);
                 depthPass.setVertexBuffer(0, mesh.vertexBuffer);

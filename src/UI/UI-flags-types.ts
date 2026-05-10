@@ -21,6 +21,7 @@ export type UIConfig = {
     depthPassSize: number;
     numOfCascades: number;
     depthMapCascade: number;
+    depthMapType: number;
     cascadeLayers: boolean;
     lightOn: boolean;
     lightAmbient: number;
@@ -53,17 +54,18 @@ export let UI: UIConfig = {
     //debug depthmap and shadows
     depthMapCascade: 1,
     cascadeLayers: false,
+    depthMapType: 0,
     //light
     lightOn: false,
     lightAmbient: 0.3,
     //shadows
-    shadowMap: true,
+    shadowMap: false,
     numberOfSamples: 4,
     biasType: 2,
     biasValue: 0.001,
     lambda: 0.7,
     // analytic shadows
-    analyticShadowsOn: true,
+    analyticShadowsOn: false,
     coneAngle: 15.0,
     hemisphereRadius: 1.0,
     dirStrength: 1.0,

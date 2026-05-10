@@ -119,6 +119,7 @@ export function addEntityFromMultiple(
     const entity = { id: generateID() };
     let components = [];
     for (let i = 0; i < meshes.length; i++) {
+        console.log()
         updateComponentCount(type);
         components.push({
             RenderComponent: { mesh: meshes[i] },

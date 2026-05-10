@@ -15,6 +15,7 @@ export interface AnalyticPassResources {
     pipeline: GPUComputePipeline;
     lightBindGroup: GPUBindGroup;
     entityBindGroups: GPUBindGroup;
+    depthMap: DepthMap;
 };
 
 function createEntityBindGroups(
@@ -116,7 +117,7 @@ export async function initAPass(
     const lightBindGroup = createLightBindGroups(gpu, pipeline, buffers.lightBufferOptions, camera, configBuffer, depthMap);
     const entityBindGroups = createEntityBindGroups(gpu, pipeline, occluderBuffers, scene);
 
-    return { pipeline, lightBindGroup, entityBindGroups };
+    return { depthMap, pipeline, lightBindGroup, entityBindGroups };
 }
 
 export async function aPass(

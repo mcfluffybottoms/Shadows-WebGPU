@@ -11,11 +11,10 @@ function hideDivElementById(shouldHide: boolean, id: string) {
 export function initUInteractions(): void {
     (document.getElementById('render') as HTMLSelectElement).value = '0';
     (document.getElementById('cameraType') as HTMLSelectElement).value = '0';
-    (document.getElementById('shadowMapOn') as HTMLInputElement).checked = true;
+    (document.getElementById('shadowMapOn') as HTMLInputElement).checked = false;
     (document.getElementById('numberOfSamples') as HTMLInputElement).value = UI.numberOfSamples.toString();
     (document.getElementById('depthPassSize') as HTMLInputElement).value = UI.depthPassSize.toString();
     (document.getElementById('numberOfCascades') as HTMLInputElement).value = UI.numOfCascades.toString();
-    (document.getElementById('shadowMapOn') as HTMLInputElement).checked = true;
 
     (document.getElementById('dirx') as HTMLSelectElement).value = UI.direction.x.toString();
     (document.getElementById('diry') as HTMLSelectElement).value = UI.direction.y.toString();
@@ -39,6 +38,7 @@ export function initUInteractions(): void {
     (document.getElementById('seeGrid') as HTMLInputElement).checked = false;
     (document.getElementById('directionalOn') as HTMLInputElement).checked = true;
     (document.getElementById('ambientOn') as HTMLInputElement).checked = true;
+    (document.getElementById('AnalyticShadowsOn') as HTMLInputElement).checked = false;
 
     hideDivElementById(UI.shadowMap, "depthMapSettings");
     let htmlElement = document.getElementById('depthCascade') as HTMLInputElement;
@@ -205,6 +205,12 @@ export function initUInteractions(): void {
         const shadowMapCheckbox = document.getElementById('ambientOn') as HTMLInputElement;
         UI.ambientOn = shadowMapCheckbox.checked;
         UIFlags.configChanged = true;
+    });
+
+    // depthMapType
+    document.getElementById('depthMapType')?.addEventListener('change', () => {
+        const input = document.getElementById('depthMapType') as HTMLSelectElement;
+        UI.depthMapType = Number(input.value);
     });
 
 }

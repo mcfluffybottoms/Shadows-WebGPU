@@ -141,7 +141,7 @@ fn main(@builtin(global_invocation_id) globalId: vec3<u32>,
         var centerPos = camera.viewMatrix * modelMatrix * vec4f(occluders[i].center.xyz, 1.0);
         let worldRadius = occluders[i].center.w * scale[0];
         //sphereProjectedAlongLightIntersectsTile(frustumCorners, centerPos1.xyz, occluders[i].center.w * 0.01, lightDir)
-        if (true || sphereIntersectsAABB(aabb, centerPos.xyz, worldRadius * 2.0, lightDir)) {
+        if (sphereIntersectsAABB(aabb, centerPos.xyz, worldRadius * 4.0, lightDir)) {
             let index = atomicAdd(&numOccluders, 1u);
             sharedOccluders[index] = i;
         }
@@ -154,7 +154,6 @@ fn main(@builtin(global_invocation_id) globalId: vec3<u32>,
 
     if (threadIndex == 0u) {
         var c = f32(min(finalCount, NUM_POSSIBLE_OCCLUDERS));
-        c = f32(arrayLength(&occludersEntityIds));
         occlusionResults[tileId].count = vec4f(vec3f(c), 1.0);
         // occlusionResults[tileId].count = vec4f(vec3f(corners[0]), 1.0);
     }

@@ -237,12 +237,12 @@ fn shadowCalculation1(in: FragmentIn, normal: vec3f, lightDir: vec3f, config: Co
                 amb = loc_amb;
             }
             else if (loc_amb > 0) {
-                amb += loc_amb;
+                amb *= (1.0 - loc_amb);
             }
         }
     }
 
-    return vec2f(1.0 -dyn, amb);
+    return vec2f(1.0 - dyn, amb);
 }
 
 @fragment
@@ -260,17 +260,20 @@ fn main(in: FragmentIn) -> @location(0) vec4f {
 
     // shadow
     var shadow = 1.0;
-    var amb = 1.0;
+    var amb = config.lightAmbient;
     var cascadeId = getCascadeId(in);
-    if (config.shadowMapOn == 1) {
+    if (config.shadowMapOn == 1 && config.analyticShadowsOn != 1) {
+        shadow = shadowCalculation(in, normal, lightDir);
+    } 
+
+    if (config.analyticShadowsOn == 1) {
         let components = shadowCalculation1(in, normal, lightDir, config);
         shadow = components[0] * config.dirStrength;
         amb -= components[1] * config.ambStrength;
-    } 
-    let SSS = shadowCalculation(in, normal, lightDir);
+    }
 
     // lighting
-    if (config.shadowMapOn == 1 && config.cascadeLayers == 1) {
+    if (config.cascadeLayers == 1) {
         color = colors[cascadeId];
     }
 
@@ -302,7 +305,6 @@ fn main(in: FragmentIn) -> @location(0) vec4f {
         let tileX = u32(ceil(screenPos.x / STEP_X));
         let tileY = u32(ceil(screenPos.y / STEP_Y));
         let tileId = tileY * config.tilesX + tileX;
-        return vec4f(vec3f(in.entityId / 2.0), 1.0);
         return vec4f(occlusionResults[tileId].count.xyz / f32(NUM_POSSIBLE_OCCLUDERS), 1.0);
     //     let ndcc = occlusionResults[tileId].count;
     //     return vec4f(

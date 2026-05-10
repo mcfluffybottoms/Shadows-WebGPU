@@ -1,5 +1,5 @@
 import * as THREE from 'three/webgpu';
-import { ComponentsMap, Entity, getModelMatrix, Scene } from '../scene-types';
+import { ApproxedGeometries, ComponentsMap, Entity, getModelMatrix, Scene } from '../scene-types';
 
 export interface System {
     render(): void;
@@ -25,26 +25,53 @@ export class DynamicSystem {
     public update() {
         for (const path of this.scene.paths) {
             const e = path.entity;
-            const component = ComponentsMap.get(e)?.ModelComponent;
-            if (!component) {
+            const components = ComponentsMap.get(e);
+            const approxes = ApproxedGeometries.get(e);
+
+            if (!components) {
                 console.log(
                     'Model Component for Entity with id ' + e.id + ' not found.'
                 );
                 continue;
             }
             const event = path.move(1);
-            component.position = new THREE.Vector3(
-                event.value.point.x,
-                component.position.y,
-                event.value.point.y
-            );
-            component.rotation.z = event.value.angle;
-            component.scale = component.scale;
-            component.modelMatrix = getModelMatrix(
-                component.position,
-                component.rotation,
-                component.scale
-            );
+            for (const component of components) {
+                const modelMatrix = component.ModelComponent;
+                modelMatrix.position = new THREE.Vector3(
+                    modelMatrix.position.x + event.value.delta.x,
+                    modelMatrix.position.y,
+                    modelMatrix.position.z + event.value.delta.y
+                );
+                modelMatrix.rotation = new THREE.Euler(
+                    -Math.PI / 2,
+                    modelMatrix.rotation.y,
+                    modelMatrix.rotation.z,
+                );
+                modelMatrix.scale = modelMatrix.scale;
+                modelMatrix.modelMatrix = getModelMatrix(
+                    modelMatrix.position,
+                    modelMatrix.rotation,
+                    modelMatrix.scale
+                );
+            }
+            if(approxes) {
+                approxes.position = new THREE.Vector3(
+                    approxes.position.x + event.value.delta.x,
+                    approxes.position.y,
+                    approxes.position.z  + event.value.delta.y
+                );
+                approxes.rotation = new THREE.Euler(
+                    approxes.rotation.x,
+                    approxes.rotation.y,
+                    event.value.angle
+                );
+                approxes.scale = approxes.scale;
+                approxes.modelMatrix = getModelMatrix(
+                    approxes.position,
+                    approxes.rotation,
+                    approxes.scale
+                );
+            }
         }
     }
 

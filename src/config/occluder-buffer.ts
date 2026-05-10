@@ -31,6 +31,11 @@ export function createOccluderBuffers(
         num_occluders += spheres.model.length;
     }
 
+    if(number_of_approxed == 0) {
+        num_occluders = 1;
+        number_of_approxed = 1;
+    }
+
     const size = number_of_approxed * num_occluders * SPHERE_SIZE * Float32Array.BYTES_PER_ELEMENT;
 
     const buffer = gpu.device.createBuffer({
@@ -62,7 +67,8 @@ export function createOccluderBuffers(
 export function fillOccluderBuffers(
     gpu: WebGPUData,
     buffers: OccluderBuffers,
-    scene: Scene
+    scene: Scene,
+    flags: {objects: boolean, model: boolean}
 ) : OccluderBuffers {
     let number_of_approxed = getApproxedGeometriesCount(); // number of 
     const { buffer, modelMatrixBuffer, idBuffer, numOfOccluders } = buffers;
@@ -77,39 +83,48 @@ export function fillOccluderBuffers(
 
     for (let i = 0; i < entities.length; i++) {
         const spheres = ApproxedGeometries.get(entities[i]);
-
+        
         if (!spheres) {
             console.warn("Entity " + entities[i].id + " does not have an approximated geometry.");
             continue;
         }
 
-        entitiesArray.set(spheres.modelMatrix.toArray(), approxedEntity * MODEL_MATRIX);
-        entitiesArray.set(spheres.scale.toArray(), approxedEntity * MODEL_MATRIX + 16);
-        for(let j = 0; j < spheres.model.length; j++) {
-            const sphere = spheres.model[j];
-            const idx = occluderCount * SPHERE_SIZE;
-            sphereArray.set([sphere.center.x, sphere.center.y, sphere.center.z, sphere.radius], idx);
-            idArray.set([approxedEntity, entities[i].id], occluderCount * 2);
-            occluderCount++;
+        if (flags.objects) {
+            entitiesArray.set(spheres.modelMatrix.toArray(), approxedEntity * MODEL_MATRIX);
+            entitiesArray.set(spheres.scale.toArray(), approxedEntity * MODEL_MATRIX + 16);
         }
+
+        if (flags.model) {
+            for(let j = 0; j < spheres.model.length; j++) {
+                const sphere = spheres.model[j];
+                const idx = occluderCount * SPHERE_SIZE;
+                sphereArray.set([sphere.center.x, sphere.center.y, sphere.center.z, sphere.radius], idx);
+                idArray.set([approxedEntity, entities[i].id], occluderCount * 2);
+                occluderCount++;
+            }
+        }
+
         approxedEntity++;
     }
-
-    gpu.device.queue.writeBuffer(
-        buffer,
-        0,
-        sphereArray
-    );
-    gpu.device.queue.writeBuffer(
-        modelMatrixBuffer,
-        0,
-        entitiesArray
-    );
-    gpu.device.queue.writeBuffer(
-        idBuffer,
-        0,
-        idArray
-    );
+    if (flags.model) {
+        gpu.device.queue.writeBuffer(
+            buffer,
+            0,
+            sphereArray
+        );
+        gpu.device.queue.writeBuffer(
+            idBuffer,
+            0,
+            idArray
+        );
+    }
+    if (flags.objects) {
+        gpu.device.queue.writeBuffer(
+            modelMatrixBuffer,
+            0,
+            entitiesArray
+        );
+    }
 
     return buffers;
 }
