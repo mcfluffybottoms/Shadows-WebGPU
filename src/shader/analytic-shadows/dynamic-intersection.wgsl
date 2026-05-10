@@ -1,7 +1,7 @@
 fn sphereIntersectsAABB(box: AABB, center: vec3f, radius: f32, dir: vec3f) -> bool {
-    let closest = clamp(center, box.min, box.max);
-    let d = abs(closest - center);
-    return dot(d, d) <= radius * radius;
+    let vDelta = max(vec3f(0.0), abs(box.c - center) - box.e);
+	let fDistSq = dot(vDelta, vDelta);
+	return fDistSq <= radius * radius;
 }
 
 fn zTest(
@@ -17,7 +17,7 @@ fn reconstructViewPos(
     ndc: vec3f,
     invProj: mat4x4<f32>
 ) -> vec3f {
-    var p = invProj * vec4f(ndc, 1.0);
+    var p = invProj * vec4f(ndc.xy, ndc.z * 2.0 - 1.0, 1.0);
     p /= p.w;
 
     return p.xyz;
@@ -44,8 +44,8 @@ fn getMaxMinDepth(pxMin: vec2f, pxMax: vec2f) -> vec2f {
 }
 
 struct AABB {
-    min: vec3f,
-    max: vec3f,
+    c: vec3f,
+    e: vec3f,
 }
 
 fn getTileAABB(
@@ -75,7 +75,11 @@ fn getTileAABB(
         mx = max(mx, pts[i]);
     }
 
-    return AABB(mn, mx);
+    var aabb = AABB(vec3f(0.0), vec3f(0.0));
+    aabb.c = (mn + mx) * 0.5;
+    aabb.e = abs(mx - aabb.c);
+
+    return aabb;
 }
 
 @group(0) @binding(0) var<storage, read> occluders: array<SphereOccluder>;
@@ -122,10 +126,16 @@ fn main(@builtin(global_invocation_id) globalId: vec3<u32>,
     let pxMinY = f32(tileY) * stepY;
     let pxMaxY = f32(tileY + 1u) * stepY;
 
-    let ndcMinX = pxMinX / f32(SCREEN.x) * 2.0 - 1.0;
-    let ndcMaxX = pxMaxX / f32(SCREEN.x) * 2.0 - 1.0;
-    let ndcMinY = -pxMinY / f32(SCREEN.y) * 2.0 + 1.0;
-    let ndcMaxY = -pxMaxY / f32(SCREEN.y) * 2.0 + 1.0;
+    var ndcMinX = -pxMinX / f32(SCREEN.x) * 2.0 + 1.0;
+    var ndcMaxX = -pxMaxX / f32(SCREEN.x) * 2.0 + 1.0;
+    var ndcMinY = pxMinY / f32(SCREEN.y) * 2.0 - 1.0;
+    var ndcMaxY = pxMaxY / f32(SCREEN.y) * 2.0 - 1.0;
+
+    // ndcMinX = -pxMinX / f32(SCREEN.x);
+    // ndcMaxX = -pxMaxX / f32(SCREEN.x);
+    // ndcMinY = pxMinY / f32(SCREEN.y);
+    // ndcMaxY = pxMaxY / f32(SCREEN.y) ;
+
 
     // find depths for each tile 
     let depthSize = vec2f(textureDimensions(depthTex));
@@ -173,7 +183,7 @@ fn main(@builtin(global_invocation_id) globalId: vec3<u32>,
     let aabb = getTileAABB(
         ndcMinX, ndcMaxX, 
         ndcMinY, ndcMaxY, 
-        minD, 1.0, 
+        0.0, 1.0, 
         camera.invProjMatrix, 
         config
     );
@@ -191,7 +201,7 @@ fn main(@builtin(global_invocation_id) globalId: vec3<u32>,
         var centerPos = camera.viewMatrix * modelMatrix * vec4f(occluders[i].center.xyz, 1.0);
         let worldRadius = occluders[i].center.w * scale[0];
         //sphereProjectedAlongLightIntersectsTile(frustumCorners, centerPos1.xyz, occluders[i].center.w * 0.01, lightDir)
-        if (sphereIntersectsAABB(aabb, centerPos.xyz, worldRadius * 1.0, lightDir)) {
+        if (sphereIntersectsAABB(aabb, centerPos.xyz, worldRadius, lightDir)) {
             let index = atomicAdd(&numOccluders, 1u);
             sharedOccluders[index] = i;
         }
