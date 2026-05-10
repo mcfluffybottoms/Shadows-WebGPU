@@ -409,9 +409,6 @@ export async function initRender(
         scene,
         { objects: true, model: true }
     );
-    // await logGPUBuffer(gpu, occluderBuffers.buffer, 1024)
-    // await logGPUBuffer(gpu, occluderBuffers.modelMatrixBuffer, 128)
-    // await logGPUBuffer(gpu, occluderBuffers.idBuffer, 128 * 2)
 
     // create resources
     var depthPassResources = await initDepthPass(
@@ -433,15 +430,6 @@ export async function initRender(
         configBuffer,
         occluderBuffers
     );
-    var aPassResources = await initAPass(
-        gpu,
-        scene,
-        sceneBuffers,
-        occluderBuffers,
-        sceneBuffers.cameraBuffer,
-        configBuffer.configBuffer,
-        depthPassResources.dynamicDepthMap
-    );
     var depthPassForAPassResources = await initDepthPass(
         gpu,
         scene,
@@ -451,6 +439,15 @@ export async function initRender(
         configBuffer,
         512,
         1
+    );
+    var aPassResources = await initAPass(
+        gpu,
+        scene,
+        sceneBuffers,
+        occluderBuffers,
+        sceneBuffers.cameraBuffer,
+        configBuffer.configBuffer,
+        depthPassForAPassResources.dynamicDepthMap
     );
 
     let renderData = {

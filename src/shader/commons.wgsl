@@ -6,8 +6,8 @@ const MAX_CASCADES = 8;
 const SCREEN = vec2<u32>(1024, 1024);
 
 const NUM_POSSIBLE_OCCLUDERS = 128u;
-const WORKGROUP_SIZE_X = 64u;
-const WORKGROUP_SIZE_Y = 1u;
+const WORKGROUP_SIZE_X = 8u;
+const WORKGROUP_SIZE_Y = 8u;
 const TOTAL_THREADS = WORKGROUP_SIZE_X * WORKGROUP_SIZE_Y;
 const influenceRadius = 10.0;
 

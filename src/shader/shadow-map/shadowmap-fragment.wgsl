@@ -114,11 +114,7 @@ fn shadowCalculation(in: FragmentIn, normal: vec3f, lightDir: vec3f) -> f32 {
     }
     shadow /= f32(config.samplesPerSide) * f32(config.samplesPerSide);
 
-    if (shadow > 1.0) {
-        return 1.0;
-    }
-
-    return shadow;
+    return saturate(shadow);
 }
 
 /*

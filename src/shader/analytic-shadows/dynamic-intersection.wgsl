@@ -33,10 +33,10 @@ fn getMaxMinDepth(pxMin: vec2f, pxMax: vec2f) -> vec2f {
 
             let uv = (vec2f(f32(x), f32(y)) + 0.5) / vec2f(SCREEN);
             
-            let d = textureSampleLevel(depthTex, depthSampler, uv, 0, 0);
+            let d = textureSampleLevel(depthTex, depthSampler, uv, 0);
 
-            minD = min(minD, d);
-            maxD = max(maxD, d);
+            minD = min(minD , d * 0.5 + 0.5);
+            maxD = max(maxD, d * 0.5 + 0.5);
         }
     }
 
@@ -49,31 +49,12 @@ struct AABB {
 }
 
 fn getTileAABB(
-    tileX: u32,
-    tileY: u32,
+    ndcMinX: f32, ndcMaxX: f32,
+    ndcMinY: f32, ndcMaxY: f32,
+    nearZ: f32, farZ: f32,
     invProj: mat4x4<f32>,
     config: Config
 ) -> AABB {
-
-    let stepX = f32(SCREEN.x) / f32(config.tilesX);
-    let stepY = f32(SCREEN.y) / f32(config.tilesY);
-
-    let pxMinX = f32(tileX) * stepX;
-    let pxMaxX = f32(tileX + 1u) * stepX;
-
-    let pxMinY = f32(tileY) * stepY;
-    let pxMaxY = f32(tileY + 1u) * stepY;
-
-    let ndcMinX = pxMinX / f32(SCREEN.x) * 2.0 - 1.0;
-    let ndcMaxX = pxMaxX / f32(SCREEN.x) * 2.0 - 1.0;
-    let ndcMinY = -pxMinY / f32(SCREEN.y) * 2.0 + 1.0;
-    let ndcMaxY = -pxMaxY / f32(SCREEN.y) * 2.0 + 1.0;
-
-    let d = getMaxMinDepth(vec2f(pxMinX, ndcMaxY), vec2f(pxMaxX, pxMaxY));
-
-    let nearZ = 0.0;
-    let farZ  = 1.0;
-
     let p0 = reconstructViewPos(vec3f(ndcMinX, ndcMinY, nearZ), invProj);
     let p1 = reconstructViewPos(vec3f(ndcMaxX, ndcMinY, nearZ), invProj);
     let p2 = reconstructViewPos(vec3f(ndcMaxX, ndcMaxY, nearZ), invProj);
@@ -105,35 +86,104 @@ fn getTileAABB(
 @group(1) @binding(0) var<uniform> lightOptions: LightOptionsUniforms;
 @group(1) @binding(1) var<uniform> camera: CameraUniforms;
 @group(1) @binding(2) var<uniform> config: Config;
-@group(1) @binding(3) var depthTex: texture_depth_2d_array;
+@group(1) @binding(3) var depthTex: texture_depth_2d;
 @group(1) @binding(4) var depthSampler: sampler;
 /*
     One work group getting one tile
     Get all occluders in parallel
 */
-const WG_SIZE: u32 = WORKGROUP_SIZE_X * 1;
+const WG_SIZE: u32 = WORKGROUP_SIZE_X * WORKGROUP_SIZE_Y;
 var<workgroup> numOccluders: atomic<u32>;
+var<workgroup> sharedMin: array<f32, WORKGROUP_SIZE_X * WORKGROUP_SIZE_Y>;
+var<workgroup> sharedMax: array<f32, WORKGROUP_SIZE_X * WORKGROUP_SIZE_Y>;
 var<workgroup> sharedOccluders: array<u32, NUM_POSSIBLE_OCCLUDERS>;
-@compute @workgroup_size(WORKGROUP_SIZE_X, 1, 1)
+@compute @workgroup_size(WORKGROUP_SIZE_X, WORKGROUP_SIZE_Y, 1)
 fn main(@builtin(global_invocation_id) globalId: vec3<u32>,
         @builtin(local_invocation_id) localId: vec3<u32>,
         @builtin(workgroup_id) workgroupId: vec3<u32>) {
+    // thread data
+    let threadIndex = localId.y * WORKGROUP_SIZE_X + localId.x;
+    let totalThreads = TOTAL_THREADS;
+    
+    // light direction
     var lightDir = normalize((camera.viewMatrix * vec4f(-1 * lightOptions.dir.xyz, 0.0)).xyz);
     lightDir.z = -lightDir.z;
 
+    // get tile data
     let tileY = workgroupId.y;
     let tileX = workgroupId.x;
 
-    let aabb = getTileAABB(tileX, tileY, camera.invProjMatrix, config);
+    let stepX = f32(SCREEN.x) / f32(config.tilesX);
+    let stepY = f32(SCREEN.y) / f32(config.tilesY);
+
+    let pxMinX = f32(tileX) * stepX;
+    let pxMaxX = f32(tileX + 1u) * stepX;
+
+    let pxMinY = f32(tileY) * stepY;
+    let pxMaxY = f32(tileY + 1u) * stepY;
+
+    let ndcMinX = pxMinX / f32(SCREEN.x) * 2.0 - 1.0;
+    let ndcMaxX = pxMaxX / f32(SCREEN.x) * 2.0 - 1.0;
+    let ndcMinY = -pxMinY / f32(SCREEN.y) * 2.0 + 1.0;
+    let ndcMaxY = -pxMaxY / f32(SCREEN.y) * 2.0 + 1.0;
+
+    // find depths for each tile 
+    let depthSize = vec2f(textureDimensions(depthTex));
+    let depthStepX = stepX * (depthSize.x / f32(SCREEN.x));
+    let depthStepY = stepY * (depthSize.y / f32(SCREEN.y));
+    let depthMinX = f32(tileX) * depthStepX;
+    let depthMaxX = f32(tileX + 1u) * depthStepX;
+    let depthMinY = f32(tileY) * depthStepY;
+    let depthMaxY = f32(tileY + 1u) * depthStepY;
+
+    var minD = 1e30;
+    var maxD = -1e30;
+
+    let startX = depthMinX + f32(localId.x);
+    let startY = depthMinY + f32(localId.y);
+    for (var y = startY; y < depthMaxY; y = y + f32(WORKGROUP_SIZE_Y)) {
+        for (var x = startX; x < depthMaxX; x = x + f32(WORKGROUP_SIZE_X)) {
+            let uv = (vec2f(x, y) + 0.5) / depthSize;
+            let d = textureSampleLevel(depthTex, depthSampler, uv, 0);
+            
+            minD = min(minD, d);
+            maxD = max(maxD, d);
+        }
+    }
+
+    sharedMin[threadIndex] = minD;
+    sharedMax[threadIndex] = maxD;
+    workgroupBarrier();
+
+    // parallel reduction to find min/max for the tile
+    var offset = WORKGROUP_SIZE_X * WORKGROUP_SIZE_Y / 2u;
+    while (offset > 0u) {
+        if (threadIndex < offset) {
+            sharedMin[threadIndex] = min(sharedMin[threadIndex], sharedMin[threadIndex + offset]);
+            sharedMax[threadIndex] = max(sharedMax[threadIndex], sharedMax[threadIndex + offset]);
+        }
+        workgroupBarrier();
+        offset = offset / 2u;
+    }
+
+    minD = sharedMin[0];
+    maxD = sharedMax[0];
+
+    // get aabb
+    let aabb = getTileAABB(
+        ndcMinX, ndcMaxX, 
+        ndcMinY, ndcMaxY, 
+        minD, 1.0, 
+        camera.invProjMatrix, 
+        config
+    );
 
     if (localId.x == 0u && localId.y == 0u) {
         atomicStore(&numOccluders, 0u);
     }
     workgroupBarrier();
 
-    // GET OCCLUDERS FOR EACH TILE
-    let threadIndex = localId.x;
-    let totalThreads = TOTAL_THREADS;
+    // get occluders for each tile
     for (var i = threadIndex; i < arrayLength(&occluders); i += totalThreads) {
         let eid = occludersEntityIds[i][0];
         let modelMatrix = occludersMatrix[eid].modelMatrix;
@@ -141,7 +191,7 @@ fn main(@builtin(global_invocation_id) globalId: vec3<u32>,
         var centerPos = camera.viewMatrix * modelMatrix * vec4f(occluders[i].center.xyz, 1.0);
         let worldRadius = occluders[i].center.w * scale[0];
         //sphereProjectedAlongLightIntersectsTile(frustumCorners, centerPos1.xyz, occluders[i].center.w * 0.01, lightDir)
-        if (sphereIntersectsAABB(aabb, centerPos.xyz, worldRadius * 4.0, lightDir)) {
+        if (sphereIntersectsAABB(aabb, centerPos.xyz, worldRadius * 1.0, lightDir)) {
             let index = atomicAdd(&numOccluders, 1u);
             sharedOccluders[index] = i;
         }
@@ -155,7 +205,6 @@ fn main(@builtin(global_invocation_id) globalId: vec3<u32>,
     if (threadIndex == 0u) {
         var c = f32(min(finalCount, NUM_POSSIBLE_OCCLUDERS));
         occlusionResults[tileId].count = vec4f(vec3f(c), 1.0);
-        // occlusionResults[tileId].count = vec4f(vec3f(corners[0]), 1.0);
     }
 
     for (var i = threadIndex; i < min(finalCount, NUM_POSSIBLE_OCCLUDERS); i += totalThreads) {
