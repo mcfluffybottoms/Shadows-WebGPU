@@ -1,15 +1,12 @@
 import * as THREE from "three/webgpu";
 import { WebGPUData } from "../utils/webgpu-data";
-
-import occludersShadowPass from '../shader/analytic-shadows/dynamic-intersection.wgsl?raw';
 import { Scene } from "../scene/scene-types";
 import { importShaderCode } from "../utils/import-shader-code";
 import { SceneBuffers } from "../scene/scene-buffers";
 import { OccluderBuffers } from "../config/occluder-buffer";
 import { UI } from "../UI/UI-flags-types";
 import { DepthMap } from "./depth-pass";
-
-const analyticShadowsPass = await importShaderCode(occludersShadowPass);
+import { analyticShadowsPass } from "./imported-shaders";
 
 export interface AnalyticPassResources {
     pipeline: GPUComputePipeline;

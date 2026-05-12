@@ -1,13 +1,9 @@
 import * as THREE from "three/webgpu";
 import { WebGPUData } from "../utils/webgpu-data";
 import { vertexBuffers } from "../utils/loader";
-
-import depthMapVertexRaw from '../shader/shadow-map/depthmap.wgsl?raw';
 import { ComponentsMap, Entity, Scene } from "../scene/scene-types";
 import { ConfigBuffers } from "../config/config-buffers";
-import { importShaderCode } from "../utils/import-shader-code";
-
-const depthMapVertex = await importShaderCode(depthMapVertexRaw);
+import { depthMapVertex } from "./imported-shaders";
 
 export type DepthMap = {
     depthTexture: GPUTexture,

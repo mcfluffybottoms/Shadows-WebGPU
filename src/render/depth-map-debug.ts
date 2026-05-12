@@ -1,12 +1,6 @@
 import { WebGPUData } from "../utils/webgpu-data";
 import { DepthMap } from "./depth-pass";
-
-import debugDepthVertexRaw from '../shader/shadow-map/debug-depth-map.wgsl?raw';
-import debugDepthFragmentRaw from '../shader/shadow-map/debug-depth-map-frag.wgsl?raw';
-import { importShaderCode } from "../utils/import-shader-code";
-
-const debugDepthVertex = importShaderCode(debugDepthVertexRaw);
-const debugDepthFragment = importShaderCode(debugDepthFragmentRaw);
+import { debugDepthFragment, debugDepthVertex } from "./imported-shaders";
 
 export type renderDepthPassResources = {
     pipeline: GPURenderPipeline;

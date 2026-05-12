@@ -201,7 +201,11 @@ fn main(@builtin(global_invocation_id) globalId: vec3<u32>,
         var centerPos = camera.viewMatrix * modelMatrix * vec4f(occluders[i].center.xyz, 1.0);
         let worldRadius = occluders[i].center.w * scale[0];
         //sphereProjectedAlongLightIntersectsTile(frustumCorners, centerPos1.xyz, occluders[i].center.w * 0.01, lightDir)
-        if (sphereIntersectsAABB(aabb, centerPos.xyz, worldRadius, lightDir)) {
+
+        
+        if (sphereIntersectsAABB(aabb, centerPos.xyz, worldRadius * 25.0, lightDir)) {
+                       
+            
             let index = atomicAdd(&numOccluders, 1u);
             sharedOccluders[index] = i;
         }

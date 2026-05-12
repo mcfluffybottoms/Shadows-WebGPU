@@ -2,19 +2,14 @@ import * as THREE from 'three/webgpu';
 import { WebGPUData } from '../utils/webgpu-data';
 import { vertexBuffers } from '../utils/loader';
 
-import shadowMapVertexRaw from '../shader/shadow-map/shadowmap-vertex.wgsl?raw';
-import shadowMapFragmentRaw from '../shader/shadow-map/shadowmap-fragment.wgsl?raw';
 import { DepthMap } from './depth-pass';
 import { ComponentsMap, Entity, Scene } from '../scene/scene-types';
 import { SceneBuffers } from '../scene/scene-buffers';
 import { ConfigBuffers } from '../config/config-buffers';
-import { importShaderCode } from '../utils/import-shader-code';
 import { OccluderBuffers } from '../config/occluder-buffer';
+import { shadowMapFragment, shadowMapVertex } from './imported-shaders';
 
 const MAX_CASCADES = 8;
-
-const shadowMapVertex = importShaderCode(shadowMapVertexRaw);
-const shadowMapFragment = importShaderCode(shadowMapFragmentRaw);
 
 export interface RenderPassResources {
     pipeline: GPURenderPipeline;
