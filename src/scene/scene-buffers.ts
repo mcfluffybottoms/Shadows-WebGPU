@@ -23,7 +23,7 @@ export function createSceneBuffers(
     const { staticEntities, dynamicEntities } = scene;
 
     const cameraBuffer = gpu.device.createBuffer({
-        size: (16 + 16 + 16 + 4) * Float32Array.BYTES_PER_ELEMENT,
+        size: (16 + 16 + 16 + 16 + 4) * Float32Array.BYTES_PER_ELEMENT,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         label: "cameraBuffer-shadowPass"
     });
@@ -85,11 +85,12 @@ export function fillSceneBuffers(
 
     // camera buffer
     if(flags.camera) {
-       const cameraMatrixArray =  new Float32Array(16 + 16 + 16 + 4);
+       const cameraMatrixArray =  new Float32Array(16 + 16 + 16 + 16 + 4);
         cameraMatrixArray.set(new Float32Array(getVP(camera).elements), 0);
         cameraMatrixArray.set(new Float32Array(camera.matrixWorldInverse.elements), 16);
         cameraMatrixArray.set(new Float32Array(camera.projectionMatrixInverse.elements), 16 + 16);
-        cameraMatrixArray.set([camera.position.x, camera.position.y, camera.position.z, 1.0], 16 + 16);
+        cameraMatrixArray.set(new Float32Array(camera.projectionMatrix.elements), 16 + 16 + 16);
+        cameraMatrixArray.set([camera.position.x, camera.position.y, camera.position.z, 1.0], 16 + 16 + 16 + 16);
         gpu.device.queue.writeBuffer(cameraBuffer, 0, cameraMatrixArray); 
     }
     

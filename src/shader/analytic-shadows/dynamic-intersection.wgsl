@@ -1,7 +1,115 @@
+// ./Manifold/build/manifold ../armadillo.obj ../armadillo_manifold.obj
+
+// https://github.com/111116/sphere-set-approximation
+// https://github.com/hjwdzh/Manifold
+// https://github.com/tunabrain/tungsten.git
+
+// tungsten scene.json
+
+
 fn sphereIntersectsAABB(box: AABB, center: vec3f, radius: f32, dir: vec3f) -> bool {
     let vDelta = max(vec3f(0.0), abs(box.c - center) - box.e);
 	let fDistSq = dot(vDelta, vDelta);
 	return fDistSq <= radius * radius;
+}
+
+/*
+    origin + direction * t
+    origin = (O_x, O_y, O_z)
+    direction = (D_x, D_y, D_z)
+*/
+struct Frustum {
+    corners: array<Ray, 4>,
+};
+struct Ray {
+    origin: vec3f,
+    direction: vec3f,
+};
+struct Cylinder {
+    center: vec3f,
+    axis: vec3f,
+    radius: f32,
+};
+fn createCylinder(center: vec3f, radius: f32, lightDir: vec3f) -> Cylinder {
+	return Cylinder(center, lightDir, radius);
+}
+fn createRay(up: vec3f, down: vec3f) -> Ray {
+    return Ray(up, normalize(down - up));
+}
+
+// cylinder equation
+// fn HalfsphereIntersectsRay(sphere: SphereOccluder, segment: Segment) -> bool {
+//     let vDelta = max(vec3f(0.0), abs(box.c - center) - box.e);
+// 	let fDistSq = dot(vDelta, vDelta);
+// 	return fDistSq <= radius * radius;
+// }
+fn cylinderIntersectsRay(cylinder: Cylinder, ray: Ray) -> bool {
+    let a = normalize(-cylinder.axis);
+
+    let oc = ray.origin - cylinder.center;
+
+    let rayParallel = dot(ray.direction, a) * a;
+    let rayPerp = ray.direction - rayParallel;
+
+    let ocParallel = dot(oc, a) * a;
+    let ocPerp = oc - ocParallel;
+
+    let A = dot(rayPerp, rayPerp);
+    let B = 2.0 * dot(rayPerp, ocPerp);
+    let C = dot(ocPerp, ocPerp) - cylinder.radius * cylinder.radius;
+
+    if (A < 1e-8) {
+        if (C > 0.0) {
+            return false;
+        }
+
+        let t0 = -dot(oc, ray.direction);
+        let hit = ray.origin + ray.direction * t0;
+        return dot(hit - cylinder.center, a) >= 0.0;
+    }
+
+    let discriminant = B * B - 4.0 * A * C;
+    if (discriminant < 0.0) {
+        return false;
+    }
+
+    let sqrtDisc = sqrt(discriminant);
+
+    var t1 = (-B - sqrtDisc) / (2.0 * A);
+    var t2 = (-B + sqrtDisc) / (2.0 * A);
+
+    // pick smallest valid intersection
+    var t = 1e30;
+
+    if (t1 >= 0.0) {
+        t = t1;
+    } else if (t2 >= 0.0) {
+        t = t2;
+    }
+
+    if (t == 1e30) {
+        return false;
+    }
+
+    let hit = ray.origin + ray.direction * t;
+
+    // ---- FIX: semi-infinite cylinder constraint ----
+    let proj = dot(hit - cylinder.center, a);
+
+    if (proj < 0.0) {
+        return false;
+    }
+
+    return true;
+}
+
+fn cylinderIntersectsFrustum(cylinder: Cylinder, frustum: Frustum) -> bool {
+    for (var i: i32 = 0; i < 4; i++) {
+        if (cylinderIntersectsRay(cylinder, frustum.corners[i])) {
+            return true;
+        }
+    }
+    return false;
 }
 
 fn zTest(
@@ -23,29 +131,36 @@ fn reconstructViewPos(
     return p.xyz;
 }
 
-// TODO: PARALLEL
-fn getMaxMinDepth(pxMin: vec2f, pxMax: vec2f) -> vec2f {
-    var minD = 1e30;
-    var maxD = -1e30;
-
-    for (var y = pxMin.y; y < pxMax.y; y = y + 1.0) {
-        for (var x = pxMin.x; x < pxMax.x; x = x + 1.0) {
-
-            let uv = (vec2f(f32(x), f32(y)) + 0.5) / vec2f(SCREEN);
-            
-            let d = textureSampleLevel(depthTex, depthSampler, uv, 0);
-
-            minD = min(minD , d * 0.5 + 0.5);
-            maxD = max(maxD, d * 0.5 + 0.5);
-        }
-    }
-
-    return vec2f(minD, maxD);
-}
-
 struct AABB {
     c: vec3f,
     e: vec3f,
+}
+
+fn getTileFrustum(
+    ndcMinX: f32, ndcMaxX: f32,
+    ndcMinY: f32, ndcMaxY: f32,
+    nearZ: f32, farZ: f32,
+    invProj: mat4x4<f32>,
+    config: Config
+) -> Frustum {
+    let p0 = reconstructViewPos(vec3f(ndcMinX, ndcMinY, nearZ), invProj);
+    let p1 = reconstructViewPos(vec3f(ndcMaxX, ndcMinY, nearZ), invProj);
+    let p2 = reconstructViewPos(vec3f(ndcMaxX, ndcMaxY, nearZ), invProj);
+    let p3 = reconstructViewPos(vec3f(ndcMinX, ndcMaxY, nearZ), invProj);
+
+    let p4 = reconstructViewPos(vec3f(ndcMinX, ndcMinY, farZ), invProj);
+    let p5 = reconstructViewPos(vec3f(ndcMaxX, ndcMinY, farZ), invProj);
+    let p6 = reconstructViewPos(vec3f(ndcMaxX, ndcMaxY, farZ), invProj);
+    let p7 = reconstructViewPos(vec3f(ndcMinX, ndcMaxY, farZ), invProj);
+
+    let pts = array<Ray, 4>(
+        createRay(p0, p4),
+        createRay(p1, p5),
+        createRay(p2, p6),
+        createRay(p3, p7)
+    );
+
+    return Frustum(pts);
 }
 
 fn getTileAABB(
@@ -110,8 +225,11 @@ fn main(@builtin(global_invocation_id) globalId: vec3<u32>,
     let totalThreads = TOTAL_THREADS;
     
     // light direction
-    var lightDir = normalize((camera.viewMatrix * vec4f(-1 * lightOptions.dir.xyz, 0.0)).xyz);
+    var lightDir = -1 * lightOptions.dir.xyz;
     lightDir.z = -lightDir.z;
+    lightDir = normalize((camera.viewMatrix * vec4f(lightDir, 0.0)).xyz);
+    // lightDir.y = -lightDir.y;
+    // lightDir.z = -lightDir.z;
 
     // get tile data
     let tileY = workgroupId.y;
@@ -126,10 +244,10 @@ fn main(@builtin(global_invocation_id) globalId: vec3<u32>,
     let pxMinY = f32(tileY) * stepY;
     let pxMaxY = f32(tileY + 1u) * stepY;
 
-    var ndcMinX = -pxMinX / f32(SCREEN.x) * 2.0 + 1.0;
-    var ndcMaxX = -pxMaxX / f32(SCREEN.x) * 2.0 + 1.0;
-    var ndcMinY = pxMinY / f32(SCREEN.y) * 2.0 - 1.0;
-    var ndcMaxY = pxMaxY / f32(SCREEN.y) * 2.0 - 1.0;
+    var ndcMinX = pxMinX / f32(SCREEN.x) * 2.0 - 1.0;
+    var ndcMaxX = pxMaxX / f32(SCREEN.x) * 2.0 - 1.0;
+    var ndcMinY = -pxMinY / f32(SCREEN.y) * 2.0 + 1.0;
+    var ndcMaxY = -pxMaxY / f32(SCREEN.y) * 2.0 + 1.0;
 
     // ndcMinX = -pxMinX / f32(SCREEN.x);
     // ndcMaxX = -pxMaxX / f32(SCREEN.x);
@@ -180,7 +298,7 @@ fn main(@builtin(global_invocation_id) globalId: vec3<u32>,
     maxD = sharedMax[0];
 
     // get aabb
-    let aabb = getTileAABB(
+    let frustum = getTileFrustum(
         ndcMinX, ndcMaxX, 
         ndcMinY, ndcMaxY, 
         0.0, 1.0, 
@@ -200,12 +318,12 @@ fn main(@builtin(global_invocation_id) globalId: vec3<u32>,
         let scale = occludersMatrix[eid].scale;
         var centerPos = camera.viewMatrix * modelMatrix * vec4f(occluders[i].center.xyz, 1.0);
         let worldRadius = occluders[i].center.w * scale[0];
+
+        let viewRadius = length((camera.viewMatrix * vec4f(worldRadius, 0.0, 0.0, 0.0)).xyz);
         //sphereProjectedAlongLightIntersectsTile(frustumCorners, centerPos1.xyz, occluders[i].center.w * 0.01, lightDir)
 
-        
-        if (sphereIntersectsAABB(aabb, centerPos.xyz, worldRadius * 25.0, lightDir)) {
-                       
-            
+        let cylinder = createCylinder(centerPos.xyz, worldRadius, lightDir);
+        if (cylinderIntersectsFrustum(cylinder, frustum)) {
             let index = atomicAdd(&numOccluders, 1u);
             sharedOccluders[index] = i;
         }

@@ -179,7 +179,7 @@ fn shadowCalculation1(in: FragmentIn, normal: vec3f, lightDir: vec3f, config: Co
     let ndc = in.clipPos.xy / in.clipPos.w;
     let screenPos = vec2<f32>(
         (ndc.x * 0.5 + 0.5) * f32(SCREEN.x),
-        -((ndc.y * 0.5 - 0.5)) * f32(SCREEN.y),
+        -(ndc.y * 0.5 - 0.5) * f32(SCREEN.y),
     );
 
     let STEP_X = f32(SCREEN.x) / f32(config.tilesX);
@@ -193,13 +193,12 @@ fn shadowCalculation1(in: FragmentIn, normal: vec3f, lightDir: vec3f, config: Co
 
     for (var i: u32 = 0; i < u32(occlusionResults[tileId].count.x); i++) {
         let occluderId = occlusionResults[tileId].indices[i];
-        // let occluderId = i;
         let occluder = occluders[occluderId];
 
         let eid = occludersEntityIds[occluderId];
-        if (in.entityId == f32(eid[1])) {
-            continue;
-        }
+        // if (in.entityId == f32(eid[1])) {
+        //     continue;
+        // }
 
         let modelMatrix = occludersMatrix[eid[0]].modelMatrix;
         let scale = occludersMatrix[eid[0]].scale;
@@ -207,12 +206,13 @@ fn shadowCalculation1(in: FragmentIn, normal: vec3f, lightDir: vec3f, config: Co
             occluder.center.xyz, 
             1.0
         );
+        var radius_world = occluder.center.w * scale[0];
 
         if (config.directionalOn == 1) {
             let loc_dyn = dynamicComponent(
                 lightDir,
                 centerPos_world.xyz,
-                occluder.center.w * scale[0],
+                radius_world,
                 in.fragPos.xyz
             );
             if (dyn == 0.0 && loc_dyn > 0) {
@@ -225,7 +225,7 @@ fn shadowCalculation1(in: FragmentIn, normal: vec3f, lightDir: vec3f, config: Co
 
         if (config.ambientOn == 1) {
             let loc_amb = ambientComponent(
-                occluder.center.w * 0.01,
+                radius_world,
                 centerPos_world.xyz,
                 in.fragPos.xyz
             );
@@ -301,13 +301,10 @@ fn main(in: FragmentIn) -> @location(0) vec4f {
         let tileX = u32(ceil(screenPos.x / STEP_X));
         let tileY = u32(ceil(screenPos.y / STEP_Y));
         let tileId = tileY * config.tilesX + tileX;
-        return vec4f(occlusionResults[tileId].count.xyz / f32(NUM_POSSIBLE_OCCLUDERS), 1.0);
-    //     let ndcc = occlusionResults[tileId].count;
-    //     return vec4f(
-    //         (ndcc.x) , 
-    //         (ndcc.z) , 
-    //         1.0, 
-    //         1.0);
+
+
+        let addedColor = vec3f(occlusionResults[tileId].count.xyz / f32(arrayLength(&occluders)));
+        return vec4f(mix(finalColor, addedColor, 0.7), 1.0);
     }
 
     return vec4f(finalColor, 1.0);

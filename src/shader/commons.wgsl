@@ -63,6 +63,7 @@ struct CameraUniforms {
     viewProjMatrix: mat4x4<f32>,
     viewMatrix: mat4x4<f32>,
     invProjMatrix: mat4x4<f32>,
+    projMatrix: mat4x4<f32>,
     pos: vec4f
 }
 
