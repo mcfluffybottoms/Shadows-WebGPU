@@ -39,6 +39,7 @@ export function getModelMatrix(
 
 export type RenderComponent = {
     mesh: ModelBuffers;
+    offset: number
 };
 
 type Components = {
@@ -49,6 +50,8 @@ type Components = {
 // ecs for storing rendering data
 export const ComponentsMap: Map<Entity, Components[]> = new Map();
 export const ApproxedGeometries: Map<Entity, ApproxedGeometry> = new Map();
+export const PrecomputedGeometry: Map<Entity, GPUTexture> = new Map();
+export const GeometryToPrecompute: Entity[] = [];
 
 export type Scene = {
     paths: Path[];
@@ -89,6 +92,21 @@ export function getApproxedGeometriesCount() {
     return numberOfApproxedGeometries;
 }
 
+let dynamicOffset = 0;
+let staticOffset = 0;
+function getOffset(type: modelType) {
+    let offset = 0;
+    if (type == modelType.DYNAMIC) {
+        offset = dynamicOffset;
+        dynamicOffset++;
+    }
+    if (type == modelType.STATIC) {
+        offset = staticOffset;
+        staticOffset++;
+    }
+    return offset;
+}
+
 export function addEntity(
     mesh: ModelBuffers,
     modelMatrix: THREE.Matrix4,
@@ -98,11 +116,10 @@ export function addEntity(
     scale: THREE.Vector3
 ): Entity {
     const entity = { id: generateID() };
-
+    let offset = getOffset(type);
     updateComponentCount(type);
-
     ComponentsMap.set(entity, [{
-        RenderComponent: { mesh },
+        RenderComponent: { mesh, offset: offset },
         ModelComponent: { modelMatrix, type, position, rotation, scale },
     }]);
     return entity;
@@ -119,10 +136,10 @@ export function addEntityFromMultiple(
     const entity = { id: generateID() };
     let components = [];
     for (let i = 0; i < meshes.length; i++) {
-        console.log()
         updateComponentCount(type);
+        let offset = getOffset(type);
         components.push({
-            RenderComponent: { mesh: meshes[i] },
+            RenderComponent: { mesh: meshes[i], offset: offset },
             ModelComponent: { 
                 modelMatrix: modelMatrices[i], 
                 type, 

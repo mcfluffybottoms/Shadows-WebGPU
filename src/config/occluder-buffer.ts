@@ -2,6 +2,12 @@ import { ApproxedGeometries, Entity, getApproxedGeometriesCount, Scene } from ".
 import { ApproxedGeometry } from "../utils/get-sphere-approximator";
 import { WebGPUData } from "../utils/webgpu-data";
 
+type OccluderInfo = {
+    numberOfSpheres: number,
+    offset: number,
+    modelMatrixOffset: number
+}
+
 export type OccluderBuffers = {
   buffer: GPUBuffer;
   idBuffer: GPUBuffer;
@@ -9,6 +15,7 @@ export type OccluderBuffers = {
   outputBuffer: GPUBuffer;
   size: number;
   numOfOccluders: number;
+  occluderInfos: Map<Entity, OccluderInfo>;
 };
 
 const MAX_NUM_OCCLUDERS = 32.0;
@@ -59,8 +66,10 @@ export function createOccluderBuffers(
         label: "OccluderOutputBuffer"
     });
 
+    const occluderInfos = new Map();
+
     return {
-        buffer, idBuffer, modelMatrixBuffer, outputBuffer, size, numOfOccluders: num_occluders
+        buffer, idBuffer, modelMatrixBuffer, outputBuffer, size, numOfOccluders: num_occluders, occluderInfos
     };
 }
 
@@ -71,7 +80,7 @@ export function fillOccluderBuffers(
     flags: {objects: boolean, model: boolean}
 ) : OccluderBuffers {
     let number_of_approxed = getApproxedGeometriesCount(); // number of 
-    const { buffer, modelMatrixBuffer, idBuffer, numOfOccluders } = buffers;
+    const { buffer, modelMatrixBuffer, idBuffer, numOfOccluders, occluderInfos } = buffers;
     const entities = scene.dynamicEntities;
 
     const sphereArray =  new Float32Array(numOfOccluders * SPHERE_SIZE);
@@ -81,6 +90,8 @@ export function fillOccluderBuffers(
     let occluderCount = 0;
     let approxedEntity = 0;
 
+    occluderInfos.clear();
+
     for (let i = 0; i < entities.length; i++) {
         const spheres = ApproxedGeometries.get(entities[i]);
         
@@ -89,11 +100,17 @@ export function fillOccluderBuffers(
             continue;
         }
 
+        occluderInfos.set(entities[i], { 
+            numberOfSpheres: spheres.model.length,
+            offset: occluderCount,
+            modelMatrixOffset: approxedEntity
+        });
+        
         if (flags.objects) {
             entitiesArray.set(spheres.modelMatrix.toArray(), approxedEntity * MODEL_MATRIX);
             entitiesArray.set(spheres.scale.toArray(), approxedEntity * MODEL_MATRIX + 16);
         }
-
+        
         if (flags.model) {
             for(let j = 0; j < spheres.model.length; j++) {
                 const sphere = spheres.model[j];

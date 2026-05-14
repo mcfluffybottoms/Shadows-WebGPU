@@ -45,15 +45,13 @@ export function getApproximatedGeometry(
     for(const primitive of src.primitives) {
         if(primitive.type != "sphere") continue;
         model.push({ 
-            radius: primitive.transform.scale,
+            radius: primitive.transform.scale * 0.99,
             center: new THREE.Vector3(
                 primitive.transform.position[0],
                 primitive.transform.position[1],
                 primitive.transform.position[2],
         )});
     }
-
-    // console.log(model.length)
 
     return { model, position, rotation, scale, modelMatrix: getModelMatrix(position, rotation, scale) };
 }

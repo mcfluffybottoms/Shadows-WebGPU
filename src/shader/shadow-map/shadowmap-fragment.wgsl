@@ -12,7 +12,8 @@
 @group(1) @binding(4) var<storage, read_write> occlusionResults: array<OcclusionOutput>;
 @group(1) @binding(5) var<storage, read> occludersMatrix: array<SphereOptions>;
 @group(1) @binding(6) var<storage, read> occludersEntityIds: array<vec2u>;
-
+@group(1) @binding(7) var<storage, read> textures: array<vec2u>;
+@group(1) @binding(8) var<storage, read> entities: array<f32>;
 // ----- SCENE SETUP ----- // 
 
 struct FragmentIn {
@@ -147,23 +148,22 @@ fn dynamicComponent(
     sphereRadius: f32,
     point: vec3<f32>,
 ) -> f32 {
-    let distVector: vec3<f32> = sphereCenter - point;
+    let distVector = sphereCenter - point;
     let distance = length(distVector);
-
-    // get radius projectred from occcluded sphere
-    let occluderConeSin = sphereRadius / distance;
-    let radius1 = asin(occluderConeSin) * config.hemisphereRadius;
-
-    // get radius projectred from light source
-    let lightConeAngle = config.coneAngle * DEG_TO_RAD;
-    let radius2 = lightConeAngle * config.hemisphereRadius;
-
-    // get radius projectred from light source
-    let distNormalized = normalize(distVector);
+    
+    let occluderAngularRadius = asin(min(1.0, sphereRadius / distance));
+    
+    let lightAngularRadius = config.coneAngle * DEG_TO_RAD;
+    
+    let distNormalized = distVector / distance;
     let dirNormalized = normalize(direction);
-    let distanceAngle = acos(clamp(dot(distNormalized, dirNormalized), -1.0, 1.0));
-    let circlesArcDistance = config.hemisphereRadius * distanceAngle;
-    return sphericalCapIntersectionApprox(radius1, radius2, circlesArcDistance);
+    let angularDistance = acos(clamp(dot(distNormalized, dirNormalized), -1.0, 1.0));
+    
+    return sphericalCapIntersectionApprox(
+        occluderAngularRadius, 
+        lightAngularRadius, 
+        angularDistance
+    );
 }
 
 fn ambientComponent(

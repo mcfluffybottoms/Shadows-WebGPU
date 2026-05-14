@@ -1,79 +1,87 @@
 import * as THREE from 'three/webgpu';
-import { WebGPUData } from '../utils/webgpu-data';
-import { vertexBuffers } from '../utils/loader';
+import { WebGPUData } from '../../utils/webgpu-data';
+import { vertexBuffers } from '../../utils/loader';
 
-import { DepthMap } from './depth-pass';
-import { ComponentsMap, Entity, Scene } from '../scene/scene-types';
-import { SceneBuffers } from '../scene/scene-buffers';
-import { ConfigBuffers } from '../config/config-buffers';
-import { OccluderBuffers } from '../config/occluder-buffer';
-import { precomputeOccRaw, precomputeOccVertexRaw, shadowMapFragment, shadowMapVertex } from './imported-shaders';
+import { DepthMap } from '../depth-pass';
+import { ComponentsMap, Entity, Scene } from '../../scene/scene-types';
+import { SceneBuffers } from '../../scene/scene-buffers';
+import { ConfigBuffers } from '../../config/config-buffers';
+import { OccluderBuffers } from '../../config/occluder-buffer';
+import { precomputeOccRaw, precomputeOccVertexRaw, shadowMapFragment, shadowMapVertex } from '../imported-shaders';
 
 function createEntityBindGroups(
     gpu: WebGPUData,
     pipeline: GPURenderPipeline,
-    staticObjectBuffer: GPUBuffer,
     dynamicObjectBuffer: GPUBuffer,
     cameraBuffer: GPUBuffer,
-    scene: Scene
+    scene: Scene,
+    entity: Entity
 ) {
-    const entityBindGroups = (entities: Entity[], objectBuffer: GPUBuffer) => {
+    const entityBindGroups = (objectBuffer: GPUBuffer) => {
         const bindGroups = [];
-        let offset = 0;
-        for (const e of entities) {
-            const components = ComponentsMap.get(e);
-            if (!components) {
-                throw (
-                    'Entity ' +
-                    e.id +
-                    ' does not have a render component present.'
-                );
-            }
-            for (const c of components) {
-                const bindGroup = gpu.device.createBindGroup({
-                    label: 'shadowpass-entityBindGroups' + e.id + "-" + offset,
-                    layout: pipeline.getBindGroupLayout(0),
-                    entries: [
-                        {
-                            binding: 0,
-                            resource: cameraBuffer,
-                        },
-                        {
-                            binding: 1,
-                            resource: {
-                                buffer: objectBuffer,
-                                offset: offset * 256,
-                                size: 144,
-                            }
+        const components = ComponentsMap.get(entity);
+        if (!components) {
+            throw (
+                'Entity ' +
+                entity.id +
+                ' does not have a render component present.'
+            );
+        }
+        for (const c of components) {
+            const bindGroup = gpu.device.createBindGroup({
+                label: 'shadowpass-entityBindGroups' + entity.id + "-" + c.RenderComponent.offset,
+                layout: pipeline.getBindGroupLayout(0),
+                entries: [
+                    {
+                        binding: 0,
+                        resource: cameraBuffer,
+                    },
+                    {
+                        binding: 1,
+                        resource: {
+                            buffer: objectBuffer,
+                            offset: c.RenderComponent.offset * 256,
+                            size: 144,
                         }
-                    ],
-                });
-                offset++;
-                bindGroups.push(bindGroup);
-            }
+                    }
+                ],
+            });
+            bindGroups.push(bindGroup);
         }
 
         return bindGroups;
     };
 
-    const staticEntityBindGroups = entityBindGroups(
-        scene.staticEntities,
-        staticObjectBuffer
-    );
-    const dynamicEntityBindGroups = entityBindGroups(
-        scene.dynamicEntities,
+    const preoccludedEntityBindGroups = entityBindGroups(
         dynamicObjectBuffer
     );
 
-    return { staticEntityBindGroups, dynamicEntityBindGroups };
+    return preoccludedEntityBindGroups;
 }
 
 function createLightBindGroups(
     gpu: WebGPUData,
     pipeline: GPURenderPipeline,
     configBuffers: ConfigBuffers,
-    occluderBuffers: OccluderBuffers
+    occluderBuffers: OccluderBuffers,
+    entity: Entity
 ) {
+    const idToPrecomputeBuffer = gpu.device.createBuffer({
+        size: (4) * Float32Array.BYTES_PER_ELEMENT,
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+        label: "cameraBuffer-shadowPass"
+    });
+    const infoToBuffer =  new Float32Array(4);
+    const info = occluderBuffers.occluderInfos.get(entity);
+    if(!info) {
+        console.error("NO INFO!");
+        infoToBuffer.set([0, 0, 0, 1.0], 0);
+    } else {
+        infoToBuffer.set([info?.modelMatrixOffset, info?.numberOfSpheres, info?.offset, 1.0], 0);
+    }
+
+    gpu.device.queue.writeBuffer(idToPrecomputeBuffer, 0, infoToBuffer);
+
     const lightBindGroups = gpu.device.createBindGroup({
         label: 'depthpass-lightBindGroups',
         layout: pipeline.getBindGroupLayout(1),
@@ -88,7 +96,9 @@ function createLightBindGroups(
             },
             {
                 binding: 1,
-                resource: { buffer: occluderBuffers.buffer },
+                resource: { 
+                    buffer: occluderBuffers.buffer
+                },
             },
             {
                 binding: 2,
@@ -96,7 +106,7 @@ function createLightBindGroups(
             },
             {
                 binding: 3,
-                resource: { buffer: occluderBuffers.idBuffer },
+                resource: { buffer: idToPrecomputeBuffer },
             },
         ],
     });
@@ -155,17 +165,18 @@ export async function PrecomputeOccluders(
     const entityBindGroups = createEntityBindGroups(
         gpu,
         pipeline,
-        buffers.staticObjectBuffer,
         buffers.dynamicObjectBuffer,
         buffers.cameraBuffer,
-        scene
+        scene,
+        entity
     );
 
     const lightBindGroup = createLightBindGroups(
         gpu,
         pipeline,
         configBuffers,
-        occluderBuffers
+        occluderBuffers,
+        entity
     );
 
     const pass = encoder.beginRenderPass({
@@ -186,40 +197,26 @@ export async function PrecomputeOccluders(
     pass.setPipeline(pipeline);
     pass.setBindGroup(1, lightBindGroup);
 
-    const processEntities = (
-        entities: Entity[],
-        bindGroups: GPUBindGroup[]
-    ) => {
-        let offset = 0;
+    const components = ComponentsMap.get(entity);
+    if (!components) {
+        pass.end();
+        return objTexture;
+    }
 
-        for (const e of entities) {
-            const components = ComponentsMap.get(e);
-            if (!components) continue;
-
-            for (const c of components) {
-                if(e != entity) {
-                    offset++;
-                    continue;
-                }
-                const mesh = c.RenderComponent.mesh;
-
-                pass.setBindGroup(0, bindGroups[offset]);
-
-                pass.setVertexBuffer(0, mesh.vertexBuffer);
-
-                if (mesh.indexBuffer) {
-                    pass.setIndexBuffer(mesh.indexBuffer, "uint16");
-                    pass.drawIndexed(mesh.indexCount);
-                } else {
-                    pass.draw(mesh.vertexCount);
-                }
-
-                offset++;
-            }
+    let offset = 0;
+    for (const c of components) {
+        const mesh = c.RenderComponent.mesh;
+        pass.setBindGroup(0, entityBindGroups[offset]);
+        pass.setVertexBuffer(0, mesh.vertexBuffer);
+        if (mesh.indexBuffer) {
+            pass.setIndexBuffer(mesh.indexBuffer, "uint16");
+            pass.drawIndexed(mesh.indexCount);
+        } else {
+            pass.draw(mesh.vertexCount);
         }
-    };
 
-    processEntities(scene.dynamicEntities, entityBindGroups.dynamicEntityBindGroups);
+        offset++;
+    }
 
     pass.end();
 

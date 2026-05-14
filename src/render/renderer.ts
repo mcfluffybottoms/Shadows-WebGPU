@@ -7,7 +7,7 @@ import {
     isCameraChanged,
     setControls,
 } from '../utils/camera-utils';
-import { getWebGPU, logGPUBuffer, WebGPUData } from '../utils/webgpu-data';
+import { getWebGPU, WebGPUData } from '../utils/webgpu-data';
 import {
     ConfigBuffers,
     createConfigBuffers,
@@ -35,16 +35,9 @@ import {
 } from './render-pass';
 import {
     initRenderDepthPass,
-    renderDepthPass,
-    renderDepthPassResources,
+    renderDepthPass
 } from './depth-map-debug';
-import {
-    createEntityFromGeometry,
-    getModelBuffers,
-    loadAndAddObject,
-} from '../utils/loader';
-import { DirectionalLight } from '../scene/light-types';
-import { ApproxedGeometries, ComponentsMap, Entity, modelType, Scene, updateApproxedGeometries } from '../scene/scene-types';
+import { GeometryToPrecompute, PrecomputedGeometry, Scene } from '../scene/scene-types';
 import {
     cameraWhat,
     renderWhat,
@@ -53,14 +46,10 @@ import {
     UIConfig,
     UIFlags,
 } from '../UI/UI-flags-types';
-import { Circle, Path, TestScenePath } from '../scene/movement/path';
-
-import carApprox from '../../public/assets/car_approx.json';
-import sphereApprox from '../../public/assets/sphere.json';
-import { getApproximatedGeometry } from '../utils/get-sphere-approximator';
 import { createOccluderBuffers, fillOccluderBuffers, OccluderBuffers } from '../config/occluder-buffer';
 import { AnalyticPassResources, aPass, initAPass } from './analytic-shadow-pass';
-import { sceneWithOneSphere } from './scene-creator';
+import { debugTwoApproxedCars, sceneWithOneSphere } from './scene-creator';
+import { PrecomputeOccluders } from './precompute/precompute-occluded';
 
 export type RenderInfo = {
     // device config
@@ -94,7 +83,7 @@ export async function initRender(
     };
 
     // get test scene
-    let scene = await sceneWithOneSphere(
+    let scene = await debugTwoApproxedCars(
         gpu,
         mainConfig,
         UI.direction
@@ -205,6 +194,16 @@ export async function initRender(
     };
 
     updateRenderFromUI(renderData, UI, flags);
+
+
+    // get preoccluded data
+    for (const entity of GeometryToPrecompute) {
+        const encoder = renderData.gpu.device.createCommandEncoder();
+        const texture = PrecomputeOccluders(
+            gpu, encoder, scene, sceneBuffers, configBuffer, occluderBuffers, entity);
+        renderData.gpu.device.queue.submit([encoder.finish()]);
+        PrecomputedGeometry.set(entity, await texture);
+    }
     return renderData;
 }
 
@@ -416,4 +415,3 @@ export async function renderFrame(
 function debugSphere(gpu: WebGPUData, mainConfig: CameraConfig, direction: THREE.Vector3) {
     throw new Error('Function not implemented.');
 }
-

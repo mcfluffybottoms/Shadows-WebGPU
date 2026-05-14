@@ -272,7 +272,7 @@ export async function sceneWithOneSphere(
 }
 
 
-async function debugOneScene(
+export async function debugTwoApproxedCars(
     gpu: WebGPUData,
     mainConfig: CameraConfig,
     direction: THREE.Vector3
@@ -288,9 +288,9 @@ async function debugOneScene(
     // get first car
     let car = await loadAndAddObject('/assets/low_poly_car.glb');
     if (car) {
-        car.scale.setScalar(0.005);
-        car.position.set(5, -0.5, 10);
-        car.rotation.set(0.0, -Math.PI / 2, 0.0);
+        car.scale.setScalar(0.01);
+        car.position.set(0, -0.5, 0);
+        car.rotation.set(0.0, 0.0, 0.0);
         car.updateMatrixWorld(true);
     } else {
         throw new Error('NO CAR!');

@@ -5,11 +5,6 @@ struct FragmentIn {
     @builtin(position) Position: vec4f,
 }
 
-struct BakedOcc {
-    dir: vec3f;
-    angle: f32;
-}
-
 const RAY_NUMBER = 128;
 
 // ----- SCENE SETUP ----- // 
@@ -20,7 +15,6 @@ const RAY_NUMBER = 128;
 
 /*
     Ambient Aperture Lighting -- Chris Oat, Pedro V. Sander
-
     cone-cone intersection 
 */
 fn sphericalCapIntersectionApprox(
@@ -50,23 +44,22 @@ fn ConeIntersectCone(
     sphereRadius: f32,
     point: vec3<f32>,
 ) -> f32 {
-    let distVector: vec3<f32> = sphereCenter - point;
+    let distVector = sphereCenter - point;
     let distance = length(distVector);
-
-    // get radius projectred from occcluded sphere
-    let occluderConeSin = sphereRadius / distance;
-    let radius1 = asin(occluderConeSin) * config.hemisphereRadius;
-
-    // get radius projectred from light source
-    let lightConeAngle = config.coneAngle * DEG_TO_RAD;
-    let radius2 = lightConeAngle * config.hemisphereRadius;
-
-    // get radius projectred from light source
-    let distNormalized = normalize(distVector);
+    
+    let occluderAngularRadius = asin(min(1.0, sphereRadius / distance));
+    
+    let lightAngularRadius = config.coneAngle * DEG_TO_RAD;
+    
+    let distNormalized = distVector / distance;
     let dirNormalized = normalize(direction);
-    let distanceAngle = acos(clamp(dot(distNormalized, dirNormalized), -1.0, 1.0));
-    let circlesArcDistance = config.hemisphereRadius * distanceAngle;
-    return sphericalCapIntersectionApprox(radius1, radius2, circlesArcDistance);
+    let angularDistance = acos(clamp(dot(distNormalized, dirNormalized), -1.0, 1.0));
+    
+    return sphericalCapIntersectionApprox(
+        occluderAngularRadius, 
+        lightAngularRadius, 
+        angularDistance
+    );
 }
 
 fn ifVisible(point: vec3<f32>, direction: vec3<f32>) -> f32 {
@@ -95,7 +88,7 @@ fn ifVisible(point: vec3<f32>, direction: vec3<f32>) -> f32 {
 const GOLDEN_ANGLE = PI * (3 - sqrt(5));
 fn directionToSample(i: u32, n: u32) -> vec3f {
     let y = 1 - (i / (n - 1)) * 2;
-    let radius = sqrt(1 - y²)
+    let radius = sqrt(1 - y*y);
     let angle = i * goldenAngle * 2 * PI;
     x = cos(angle) * radius;
     z = sin(angle) * radius;
@@ -104,7 +97,7 @@ fn directionToSample(i: u32, n: u32) -> vec3f {
 
 
 @fragment
-fn main(in: FragmentIn) -> BakedOcc {
+fn main(in: FragmentIn) -> vec4f {
     // light direction
     var visibleDirs: array<vec3f, RAY_NUMBER>;
     var index = 0;
