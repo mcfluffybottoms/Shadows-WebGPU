@@ -14,9 +14,165 @@ import { ApproxedGeometries, ComponentsMap, Entity, modelType, Scene, updateAppr
 import { Circle, Path, TestScenePath } from '../scene/movement/path';
 import carApprox from '../../public/assets/car_approx.json';
 import sphereApprox from '../../public/assets/sphere.json';
+import retepApprox from '../../public/assets/retep.json';
+import catApprox from '../../public/assets/cat.json';
 import { getApproximatedGeometry } from '../utils/get-sphere-approximator';
 
 // ----- DEBUG - MAKE A TEST SCENE ----- //
+export async function createLastTestScene(
+    gpu: WebGPUData,
+    mainConfig: CameraConfig,
+    direction: THREE.Vector3
+): Promise<Scene> {
+    // light source
+    const light = new DirectionalLight();
+    light.direction = direction;
+
+    // add static buildings
+    const obj = await loadAndAddObject('/assets/with_mechet.glb');
+    if (obj) {
+        obj.scale.setScalar(0.1);
+        obj.position.set(0, 0, 0);
+        obj.updateMatrixWorld(true);
+    } else {
+        throw new Error('NO OBJ!');
+    }
+
+    let staticEntities = getModelBuffers(gpu, obj, modelType.STATIC);
+    if (!staticEntities) {
+        console.warn('Models were not loaded.');
+        staticEntities = [];
+    }
+
+    // add plane
+    const plane = createEntityFromGeometry(
+        gpu,
+        new THREE.BoxGeometry(60, 60, 1),
+        modelType.STATIC,
+        new THREE.Vector3(0, -0.5, 0),
+        new THREE.Euler(-Math.PI / 2, undefined, undefined),
+        1.0
+    );
+    staticEntities.push(plane);
+
+    let dynamicEntities = []
+    const paths: Path[] = []
+
+    // add car
+    let car = await loadAndAddObject('/assets/low_poly_car.glb');
+    if (car) {
+        car.scale.setScalar(0.005);
+        car.position.set(5, 0.0, 14);
+        car.rotation.set(0.0, -Math.PI / 2, 0.0);
+        car.updateMatrixWorld(true);
+    } else {
+        throw new Error('NO CAR!');
+    }
+    const carMesh1 = await getModelBuffers(
+        gpu,
+        car,
+        modelType.DYNAMIC,
+        new THREE.Vector3(5, 0.0, 14),
+        new THREE.Euler(0.0, -Math.PI / 2, 0.0),
+        new THREE.Vector3(0.005, 0.005, 0.005)
+    );
+    const approxedCar1 = getApproximatedGeometry(
+        carApprox,
+        new THREE.Vector3(5, 0.0, 14),
+        new THREE.Euler(0.0, -Math.PI / 2, 0.0),
+        new THREE.Vector3(0.005, 0.005, 0.005)
+    );
+    updateApproxedGeometries();
+    ApproxedGeometries.set(carMesh1[0], approxedCar1);
+    dynamicEntities.push(carMesh1[0]);
+
+    let car2 = await loadAndAddObject('/assets/low_poly_car.glb');
+    if (car2) {
+        car2.scale.setScalar(0.01);
+        car2.position.set(20, 0.0, 4);
+        car2.rotation.set(0.0, -Math.PI / 6, 0.0);
+        car2.updateMatrixWorld(true);
+    } else {
+        throw new Error('NO CAR!');
+    }
+    const carMesh2 = await getModelBuffers(
+        gpu,
+        car2,
+        modelType.DYNAMIC,
+        new THREE.Vector3(20, 0.0, 4),
+        new THREE.Euler(0.0, -Math.PI / 6, 0.0),
+        new THREE.Vector3(0.01, 0.01, 0.01)
+    );
+    const approxedCar2 = getApproximatedGeometry(
+        carApprox,
+        new THREE.Vector3(20, 0.0, 4),
+        new THREE.Euler(0.0, -Math.PI / 6, 0.0),
+        new THREE.Vector3(0.01, 0.01, 0.01)
+    );
+    updateApproxedGeometries();
+    ApproxedGeometries.set(carMesh2[0], approxedCar2);
+    dynamicEntities.push(carMesh2[0]);
+
+    // add retep
+    // let retep = await loadAndAddObject('/assets/retep_niffirg.glb');
+    // if (retep) {
+    //     retep.scale.setScalar(0.3);
+    //     retep.position.set(16, 0.0, -3);
+    //     retep.rotation.set(0.0, -Math.PI / 4, 0.0);
+    //     retep.updateMatrixWorld(true);
+    // } else {
+    //     throw new Error('NO CAR!');
+    // }
+    // const retepMesh1 = await getModelBuffers(
+    //     gpu,
+    //     retep,
+    //     modelType.DYNAMIC,
+    //     new THREE.Vector3(16, 0.0, -3),
+    //     new THREE.Euler(0.0, 0.0, 0.0),
+    //     new THREE.Vector3(0.3, 0.3, 0.3)
+    // );
+    // const approxedRetep1 = getApproximatedGeometry(
+    //     retepApprox,
+    //     new THREE.Vector3(16, 0.0, -3),
+    //     new THREE.Euler(0.0, 0.0, 0.0),
+    //     new THREE.Vector3(0.3, 0.3, 0.3)
+    // );
+    // updateApproxedGeometries();
+    // ApproxedGeometries.set(retepMesh1[0], approxedRetep1);
+    // dynamicEntities.push(retepMesh1[0]);
+
+    let car3 = await loadAndAddObject('/assets/low_poly_car.glb');
+    if (car3) {
+        car3.scale.setScalar(0.01);
+        car3.position.set(23, 0.0, 13);
+        car3.rotation.set(0.0, 0.0, 0.0);
+        car3.updateMatrixWorld(true);
+    } else {
+        throw new Error('NO CAR!');
+    }
+    const carMesh3 = await getModelBuffers(
+        gpu,
+        car3,
+        modelType.DYNAMIC,
+        new THREE.Vector3(23, 0.0, 13),
+        new THREE.Euler(0.0, 0.0, 0.0),
+        new THREE.Vector3(0.01, 0.01, 0.01)
+    );
+    const approxedCar3 = getApproximatedGeometry(
+        carApprox,
+        new THREE.Vector3(23, 0.0, 13),
+        new THREE.Euler(0.0, 0.0, 0.0),
+        new THREE.Vector3(0.01, 0.01, 0.01)
+    );
+    updateApproxedGeometries();
+    ApproxedGeometries.set(carMesh3[0], approxedCar3);
+    dynamicEntities.push(carMesh3[0]);
+
+
+    console.log(ApproxedGeometries)
+    return { staticEntities, dynamicEntities, light, paths, cameraConfig: mainConfig };
+}
+
 async function createTestScene(
     gpu: WebGPUData,
     mainConfig: CameraConfig,

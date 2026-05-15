@@ -102,15 +102,15 @@ fn shadowCalculation(in: FragmentIn, normal: vec3f, lightDir: vec3f) -> f32 {
                 cascadeId,
                 projCoords.z - bias
             );
-            let dynamicSample = textureSampleCompare(
-                dynamicDepthTex, 
-                depthSampler,
-                snappedCoords + offset,
-                cascadeId,
-                projCoords.z - bias
-            );
+            // let dynamicSample = textureSampleCompare(
+            //     dynamicDepthTex, 
+            //     depthSampler,
+            //     snappedCoords + offset,
+            //     cascadeId,
+            //     projCoords.z - bias
+            // );
 
-            shadow += staticSample * dynamicSample;
+            shadow += staticSample;
         }
     }
     shadow /= f32(config.samplesPerSide) * f32(config.samplesPerSide);
@@ -203,9 +203,9 @@ fn shadowCalculation1(in: FragmentIn, normal: vec3f, lightDir: vec3f, config: Co
         let occluder = occluders[occluderId];
 
         let eid = occludersEntityIds[occluderId];
-        // if (in.entityId == f32(eid[1])) {
-        //     continue;
-        // }
+        if (in.entityId == f32(eid[1])) {
+            continue;
+        }
 
         let modelMatrix = occludersMatrix[eid[0]].modelMatrix;
         let scale = occludersMatrix[eid[0]].scale;
@@ -255,15 +255,16 @@ fn main(in: FragmentIn) -> @location(0) vec4f {
     var shadow = 1.0;
     var amb = config.lightAmbient;
     var cascadeId = getCascadeId(in);
-    if (config.shadowMapOn == 1 && config.analyticShadowsOn != 1) {
-        shadow = shadowCalculation(in, normal, lightDir);
-    } 
 
     if (config.analyticShadowsOn == 1) {
         let components = shadowCalculation1(in, normal, lightDir, config);
         shadow = components[0] * config.dirStrength;
         amb -= components[1] * config.ambStrength;
     }
+
+    if (config.shadowMapOn == 1) {
+        shadow *= shadowCalculation(in, normal, lightDir);
+    } 
 
     // lighting
     if (config.cascadeLayers == 1) {

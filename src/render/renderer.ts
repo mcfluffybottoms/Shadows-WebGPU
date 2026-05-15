@@ -48,7 +48,7 @@ import {
 } from '../UI/UI-flags-types';
 import { createOccluderBuffers, fillOccluderBuffers, OccluderBuffers } from '../config/occluder-buffer';
 import { AnalyticPassResources, aPass, initAPass } from './analytic-shadow-pass';
-import { debugTwoApproxedCars, sceneWithOneSphere } from './scene-creator';
+import { createLastTestScene, debugTwoApproxedCars, sceneWithOneSphere } from './scene-creator';
 import { PrecomputeOccluders } from './precompute/precompute-occluded';
 
 export type RenderInfo = {
@@ -83,7 +83,7 @@ export async function initRender(
     };
 
     // get test scene
-    let scene = await debugTwoApproxedCars(
+    let scene = await createLastTestScene(
         gpu,
         mainConfig,
         UI.direction
