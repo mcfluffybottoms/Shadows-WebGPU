@@ -51,13 +51,13 @@ fn getCascadeId(in: FragmentIn) -> u32 {
 fn getBias(projCoords: vec3f) -> f32 {
     var bias = config.biasValue;
     if (config.biasType == 0) {
-        let maxBias = config.biasValue;
-        let baseBias = 0.001;
-        let dx = dpdx(projCoords.z);
-        let dy = dpdy(projCoords.z);
-        let slopeScale = abs(dx) + abs(dy);
-        bias = min(baseBias + slopeScale * 0.5, maxBias);
     }
+    let maxBias = config.biasValue;
+    let baseBias = 0.001;
+    let dx = dpdx(projCoords.z);
+    let dy = dpdy(projCoords.z);
+    let slopeScale = abs(dx) + abs(dy);
+    bias = min(baseBias + slopeScale * 0.5, maxBias);
     return bias;
 }
 
@@ -175,6 +175,13 @@ fn ambientComponent(
     return (sphereRadius / distance) * (sphereRadius / distance);
 }
 
+fn combineOcclusion(existing: f32, newOcclusion: f32) -> f32 {
+    let existingLight = 1.0 - existing;
+    let newLight = 1.0 - newOcclusion;
+    let combinedLight = existingLight * newLight;
+    return 1.0 - combinedLight;
+}
+
 fn shadowCalculation1(in: FragmentIn, normal: vec3f, lightDir: vec3f, config: Config) -> vec2f {
     let ndc = in.clipPos.xy / in.clipPos.w;
     let screenPos = vec2<f32>(
@@ -215,12 +222,7 @@ fn shadowCalculation1(in: FragmentIn, normal: vec3f, lightDir: vec3f, config: Co
                 radius_world,
                 in.fragPos.xyz
             );
-            if (dyn == 0.0 && loc_dyn > 0) {
-                dyn = loc_dyn;
-            }
-            else if (loc_dyn > 0) {
-                dyn += (loc_dyn);
-            }
+            dyn = combineOcclusion(dyn, loc_dyn);
         }
 
         if (config.ambientOn == 1) {
@@ -229,12 +231,7 @@ fn shadowCalculation1(in: FragmentIn, normal: vec3f, lightDir: vec3f, config: Co
                 centerPos_world.xyz,
                 in.fragPos.xyz
             );
-            if (amb == 0.0 && loc_amb > 0) {
-                amb = loc_amb;
-            }
-            else if (loc_amb > 0) {
-                amb *= (1.0 - loc_amb);
-            }
+            amb = combineOcclusion(amb, loc_amb);
         }
     }
 
