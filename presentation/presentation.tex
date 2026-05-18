@@ -1,0 +1,251 @@
+\documentclass[10pt, aspectratio=169]{beamer}
+\usepackage[russian]{babel}
+\usepackage{pgfpages}
+\usepackage{graphicx}
+\usepackage{tabularx}
+\usepackage[T1]{fontenc}
+\usepackage{tgbonum}
+
+\setbeameroption{hide notes}
+\setbeamertemplate{footline}{
+    \leavevmode
+    \begin{beamercolorbox}[ht=2.5ex,dp=1.125ex,leftskip=1em,rightskip=.3em]{author in head/foot}
+        \usebeamerfont{author in head/footer}Алтунина Екатерина Юрьевна
+        \hfill
+        \usebeamerfont{page number in head/foot}\insertframenumber\,/\,\inserttotalframenumber\hspace{1em}
+    \end{beamercolorbox}
+    \vspace{0.2em}
+}
+% TITLE PAGE
+\title[Short title]{Визуализация теней в реальном времени }
+\date[02.02.2026]{Апрель, 2026}
+\author[author]{Алтунина Екатерина Юрьевна}
+\institute{Руководитель: Романов Алексей Алексеевич\and ИПКН ИТМО, программа «Разработка программного обеспечения»\and(Санкт-Петербург)}
+
+
+% \setbeamerfont{normal text}{family=\sffamily}
+% \setbeamerfont{structure}{family=\sffamily}
+
+\begin{document}
+%_____________________________________________________
+% Title page
+\frame[plain]{
+\titlepage
+}
+%_____________________________________________________
+% ToC
+% \frame{{Содержание}
+% \tableofcontents
+% }
+%_____________________________________________________
+% 
+\section{Section 1}
+\subsection{Subsection 1.1}
+\frame{{Введение в предметную область} 
+
+\begin{columns}
+    \column{0.65\textwidth}
+    Тени - ключевой элемент любой системы визуализации: 
+    они определяют расстояния между объектами, особенно в картографии.
+
+    В условиях веб-браузера приходится находить разумный 
+    компромисс между реалистичностью теней и скоростью работы сцены.
+    \column{0.3\textwidth}
+    \includegraphics[width=\textwidth]{no shadows.PNG}
+    \includegraphics[width=\textwidth]{shadows.PNG}
+\end{columns}
+}
+
+\subsection{Subsection 1.2}
+\frame{{Существующие решения} 
+
+\begin{table}[h]
+\centering
+\footnotesize
+\begin{tabular}{|l|c|c|c|c|c|}
+\hline
+\textbf{Метод} & \textbf{Скорость} & \textbf{Память} & \textbf{Область} & \textbf{Качество} & \textbf{Вывод} \\
+\hline
+Планарные тени    & + & + & - & - & Малая обл. применения \\
+\hline
+Теневой объем     & {\tiny$\pm$} & {\tiny$\pm$} & + & + & Зависит от покрытых пикселей \\
+\hline
+Трассировка лучей & - & - & + & + & Высокая сложность \\
+\hline
+Карты теней       & {\tiny$\pm$} & {\tiny$\pm$} & + & {\tiny$\pm$} & \textbf{Используем} \\
+\hline
+\end{tabular}
+\caption{Сравнение методов рендеринга теней}
+\end{table}
+
+}
+
+\subsection{Subsection 1.3}
+\frame{{Карты теней} 
+
+Универсальное и высокопроизводительное решение.
+
+\begin{itemize} 
+\item (+) Подходит для создания теней от различных источников света (точечных, направленных, прожекторов)
+\item (+) Относительно предсказуемы в плане оценки стоимости построения карты теней
+\item (--) Наличие артефактов
+\item (--) Требуется строить одну или несколько карт теней для каждого источника света
+\end{itemize}
+
+}
+
+\subsection{Subsection 1.7}
+\frame{{Аналитические тени} 
+
+Аналитические тени -
+это метод вычисления теней без использования карт глубины, текстур или растеризации. 
+Вместо этого тень рассчитывается математически, по формуле, прямо в шейдере, на основе формы объекта-источника тени.
+\vspace{0.5em}
+
+\begin{center}
+    \includegraphics[width=0.6\textwidth]{analytic-shadows.jpg}
+\end{center}
+}
+
+%_____________________________________________________
+%
+\section{Section 2}
+\subsection{Subsection 2.1}
+\frame{{Цель и задачи} 
+{} 
+
+Цель: оценить применимость и производительность метода аналитических теней в браузере и скомбинировать его с классическими подходами теневых карт.
+\vspace{1em}
+
+Задачи:
+\begin{itemize} 
+    \item Создать Web-песочницу с использованием WebGPU, реализовать навигацию по сцене и классический подход к визуализации теней - карту теней с фиксированным шагом
+    \item Разработать систему раздельного рендеринга динамических/статических объектов и аналитические тени для динамических объектов на простых геометрических формах. Предусмотрев возможность изменения параметров, влияющих на отрисовку теней.
+    \item Совместить оба способа, оценить корректность отрисовки теней и провести анализ производительности (FPS, время кадра, нагрузка на GPU) при различных сценариях
+    \item Провести валидацию полученных данных
+\end{itemize}
+}
+
+\section{Section 3}
+\subsection{Subsection 3.1}
+\frame{{Создание веб-песочницы} 
+{}
+
+\begin{columns}
+    \column{0.65\textwidth}
+    На первом этапе разработки:
+    \begin{itemize} 
+        \item Реализована навигация по сцене
+        \item Поддержано два вида камеры -  ортографическая и перспективная.
+        \item Для работы с камерой и навигацией - Three.JS
+    \end{itemize}
+    \column{0.3\textwidth}
+    \includegraphics[width=1.0\textwidth]{1.jpg}
+\end{columns}
+
+}
+
+\section{Section 3}
+\subsection{Subsection 3.2}
+\frame{{Реализация метода каскадных теней} 
+{}
+
+На втором этапе разработки:
+\begin{itemize} 
+    \item Реализован метод каскадных теней (до 8 каскадов)
+    \item Динамический расчет границ отсечения каскадов в зависимости от положения камеры
+    \item Добавлена визуализация отладочного режима каскадов (отображение цветовых зон)
+\end{itemize}
+
+\begin{center}
+    \includegraphics[width=0.6\textwidth]{casc.png}
+\end{center}
+
+}
+
+\section{Section 3}
+\subsection{Subsection 3.3}
+\frame{{Борьба с артефактами} 
+{}
+
+\vspace{0.5em}
+\begin{table}[h]
+    \centering
+    \begin{tabular}{ccc}
+        \textbf{Алиасинг} & \textbf{«Теневые прыщи»} & \textbf{Обрезание теней} \\
+        \includegraphics[width=0.2\textwidth]{aliasing-no-pcf.jpg} & 
+        \includegraphics[width=0.3\textwidth]{shadow-acne.jpg} & 
+        \includegraphics[width=0.3\textwidth]{cutoutshadows.jpg} \\
+        \parbox{0.3\textwidth}{\centering \textbf{Метод борьбы:} PCF (Percentage Closer Filtering) --- Сглаживание краёв} & 
+        \parbox{0.3\textwidth}{\centering \textbf{Метод борьбы:} Смещение (depth bias)} & 
+        \parbox{0.3\textwidth}{\centering \textbf{Метод борьбы:} Вписывание сцены во фруструм} \\
+    \end{tabular}
+\end{table}
+}
+
+
+\section{Section 3}
+\subsection{Subsection 3.5}
+\frame{{Система для разделения рендеринга динамических и статических объектов} 
+{}
+
+Пайплайн построения теней для сцены с динамическими объектами при использовании карт теней сейчас устроен так:
+\begin{itemize} 
+    \item На входе - две карты теней. На одной отрисовываются статические объекты, на другой - динамические
+    \item При изменении положения камеры идет перестройка карты теней для статических объектов
+    \item Каждые 0,05 секунд или при изменении положения камеры идет перестройка карты теней для группы динамических объектов
+\end{itemize}
+
+}
+
+\section{Section 4}
+\subsection{Subsection 4.1}
+\frame{{Вывод} 
+{}
+
+На данный момент:
+
+\begin{itemize}  
+\item Есть работающая песочница. Реализован классический метод каскадных теней.
+\item Разработана система для разделения статических и динамических объектов.
+\item Начата работа по имплементации аналитических теней.
+\end{itemize}
+
+}
+
+\subsection*{Section 5}
+\frame{{Карты теней} 
+
+Алгоритм:
+\begin{itemize} 
+\item Сначала происходит построение сцены в Z-буфер с точки зрения источника света, 
+чтобы установить видимые из этой точки пикселы и расстояния до них. 
+\item После этого сцена перестраивается уже с точки зрения наблюдателя. 
+\item Если пиксель невидим с точки зрения источника света, он закрашивается тёмным цветом.
+\end{itemize}
+\begin{columns}
+    \column{0.3\textwidth}
+    \includegraphics[width=\textwidth]{depthmap.PNG}
+    \column{0.3\textwidth}
+    \includegraphics[width=\textwidth]{shadows.PNG}
+\end{columns}
+}
+
+\subsection*{Section 6}
+\frame{{Артефакты}
+
+\vspace{0.5em}
+\begin{columns}
+    \column{0.3\textwidth}
+    Алиасинг
+    \includegraphics[width=\textwidth]{aliasing-no-pcf.jpg}
+    \column{0.3\textwidth}
+    <<Теневые прыщи>>
+    \includegraphics[width=\textwidth]{shadow-acne.jpg}
+    \column{0.3\textwidth}
+    Обрезание теней
+    \includegraphics[width=\textwidth]{cutoutshadows.jpg}
+\end{columns}
+}
+
+\end{document}
