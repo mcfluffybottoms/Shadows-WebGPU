@@ -292,7 +292,7 @@ fn main(@builtin(global_invocation_id) globalId: vec3<u32>,
         var centerPos = camera.viewMatrix * modelMatrix * vec4f(occluders[i].center.xyz, 1.0);
         let worldRadius = occluders[i].center.w * scale[0];
 
-        let cylinder = createCylinder(centerPos.xyz, worldRadius + 2.0, lightDir);
+        let cylinder = createCylinder(centerPos.xyz, worldRadius + 5.0, lightDir);
         if (cylinderIntersectsFrustum(cylinder, frustum)) {
             let index = atomicAdd(&numOccluders, 1u);
             sharedOccluders[index] = i;

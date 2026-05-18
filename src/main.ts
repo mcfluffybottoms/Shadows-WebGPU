@@ -1,9 +1,9 @@
 import { UI, UIFlags } from "./UI/UI-flags-types";
 import { changeFPS, changeMPF, initUInteractions } from "./UI/UI";
-import { Stats } from "./utils/stats";
 import { initRender, renderFrame } from "./render/renderer";
 import { Path } from "./scene/movement/path";
 import { DynamicSystem } from "./scene/movement/systems";
+import Stats from "three/examples/jsm/libs/stats.module.js";
 
 function initExternal() {
   initUInteractions();
@@ -12,16 +12,20 @@ function initExternal() {
 // ------ MAIN LOOP ------ //
 
 // statistics
-let stats = new Stats();
+var stats = new Stats();
+stats.showPanel( 1 ); // 0: fps, 1: ms, 2: mb, 3+: custom
+document.body.appendChild( stats.dom );
 
 // get render data
 initExternal();
 let renderData = await initRender(UI, UIFlags);
 let system =  new DynamicSystem(renderData.scene);
 
+import {getWebGPUMemoryUsage} from 'https://greggman.github.io/webgpu-memory/dist/1.x/webgpu-memory.module.js';
+
 async function animate() {
   // start profiling
-  stats.start();
+  stats.begin();
 
   // run system
   system.update();
@@ -30,12 +34,10 @@ async function animate() {
   renderFrame(renderData, UI, UIFlags);
 
   // ------ PROFILING ------ //
-  let elapsed = stats.end();
-  if (elapsed) {
-    changeFPS(stats.fps);
-    changeMPF(stats.avgMpf);
-  }
+  stats.end();
+  const info = getWebGPUMemoryUsage();
 
+  console.log(info)
   requestAnimationFrame(animate);
 }
 

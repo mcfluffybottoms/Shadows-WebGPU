@@ -45,7 +45,7 @@ export function getApproximatedGeometry(
     for(const primitive of src.primitives) {
         if(primitive.type != "sphere") continue;
         model.push({ 
-            radius: primitive.transform.scale * 0.99,
+            radius: primitive.transform.scale,
             center: new THREE.Vector3(
                 primitive.transform.position[0],
                 primitive.transform.position[1],

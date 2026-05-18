@@ -21,7 +21,7 @@ struct FragmentIn {
     @location(2) fragNorm: vec3<f32>,
     @location(3) clipPos: vec4f,
     @location(4) uv: vec2<f32>,
-    @location(5) entityId: f32,
+    @location(5) entityId: u32,
 }
 
 // colors for cascade
@@ -53,7 +53,7 @@ fn getBias(projCoords: vec3f) -> f32 {
     if (config.biasType == 0) {
     }
     let maxBias = config.biasValue;
-    let baseBias = 0.001;
+    let baseBias = bias;
     let dx = dpdx(projCoords.z);
     let dy = dpdy(projCoords.z);
     let slopeScale = abs(dx) + abs(dy);
@@ -102,15 +102,15 @@ fn shadowCalculation(in: FragmentIn, normal: vec3f, lightDir: vec3f) -> f32 {
                 cascadeId,
                 projCoords.z - bias
             );
-            // let dynamicSample = textureSampleCompare(
-            //     dynamicDepthTex, 
-            //     depthSampler,
-            //     snappedCoords + offset,
-            //     cascadeId,
-            //     projCoords.z - bias
-            // );
+            let dynamicSample = textureSampleCompare(
+                dynamicDepthTex, 
+                depthSampler,
+                snappedCoords + offset,
+                cascadeId,
+                projCoords.z - bias
+            );
 
-            shadow += staticSample;
+            shadow += staticSample * dynamicSample;
         }
     }
     shadow /= f32(config.samplesPerSide) * f32(config.samplesPerSide);
@@ -157,7 +157,7 @@ fn dynamicComponent(
     
     let distNormalized = distVector / distance;
     let dirNormalized = normalize(direction);
-    let angularDistance = acos(clamp(dot(distNormalized, dirNormalized), -1.0, 1.0));
+    let angularDistance = acos(clamp(dot(distNormalized, dirNormalized), -1.0, 1.0)) * config.hemisphereRadius;
     
     return sphericalCapIntersectionApprox(
         occluderAngularRadius, 
@@ -203,7 +203,7 @@ fn shadowCalculation1(in: FragmentIn, normal: vec3f, lightDir: vec3f, config: Co
         let occluder = occluders[occluderId];
 
         let eid = occludersEntityIds[occluderId];
-        if (in.entityId == f32(eid[1])) {
+        if (in.entityId == eid[1]) {
             continue;
         }
 
@@ -241,6 +241,7 @@ fn shadowCalculation1(in: FragmentIn, normal: vec3f, lightDir: vec3f, config: Co
 @fragment
 fn main(in: FragmentIn) -> @location(0) vec4f {
     var color = textureSample(objTexture, objSampler, in.uv).rgb;
+    color = vec3f(0.9, 0.9, 0.9);
     let normal = normalize(in.fragNorm);
 
     // light direction
@@ -263,7 +264,7 @@ fn main(in: FragmentIn) -> @location(0) vec4f {
     }
 
     if (config.shadowMapOn == 1) {
-        shadow *= shadowCalculation(in, normal, lightDir);
+        shadow *= mix(1.0, shadowCalculation(in, normal, lightDir), 0.5);
     } 
 
     // lighting
@@ -283,7 +284,7 @@ fn main(in: FragmentIn) -> @location(0) vec4f {
     // DEBUG - cascades
     var finalColor = lighting;
     if(config.shadowMapOn == 1 && config.cascadeLayers == 1) {
-        finalColor = mix(lighting, lighting * colors[cascadeId], 0.7);
+        finalColor = mix(lighting, lighting * colors[cascadeId], 0.3);
     }
 
     // DEBUG - SHOW WHICH TILES HAVE OCCLUDERS

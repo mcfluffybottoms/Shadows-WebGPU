@@ -3,7 +3,7 @@ struct VertexOut {
     @location(2) fragNorm: vec3<f32>,
     @location(3) clipPos: vec4f,
     @location(4) uv: vec2<f32>,
-    @location(5) entityId: f32,
+    @location(5) entityId: u32,
     @builtin(position) Position: vec4f,
 };
 
@@ -24,7 +24,7 @@ fn main(v: Vertex) -> VertexOut {
     output.clipPos = output.Position;
     output.fragNorm = (object.normalMatrix * vec4f(v.normal, 0.0)).xyz;
     output.uv = vec2(1.0, 1.0);
-    output.entityId = object.entityId;
+    output.entityId = u32(object.entityId);
     
     return output;
 }

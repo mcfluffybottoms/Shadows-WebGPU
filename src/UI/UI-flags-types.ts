@@ -49,8 +49,8 @@ export let UI: UIConfig = {
     //light buffer
     direction: new THREE.Vector3(0.5, -0.5, 0.5),
     //reinit
-    depthPassSize: 2048,
-    numOfCascades: 4,
+    depthPassSize: 4,
+    numOfCascades: 1,
     //debug depthmap and shadows
     depthMapCascade: 1,
     cascadeLayers: false,

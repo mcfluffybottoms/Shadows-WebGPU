@@ -9,7 +9,7 @@ import { ConfigBuffers } from '../config/config-buffers';
 import { OccluderBuffers } from '../config/occluder-buffer';
 import { shadowMapFragment, shadowMapVertex } from './imported-shaders';
 
-const MAX_CASCADES = 8;
+const MAX_CASCADES = 1;
 
 export interface RenderPassResources {
     pipeline: GPURenderPipeline;
