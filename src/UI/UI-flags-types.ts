@@ -26,6 +26,7 @@ export type UIConfig = {
     lightOn: boolean;
     lightAmbient: number;
     shadowMap: boolean;
+    shadowMapDynamic: boolean,
     numberOfSamples: number;
     biasType: number;
     biasValue: number;
@@ -60,6 +61,7 @@ export let UI: UIConfig = {
     lightAmbient: 0.3,
     //shadows
     shadowMap: false,
+    shadowMapDynamic: false,
     numberOfSamples: 4,
     biasType: 2,
     biasValue: 0.001,

@@ -29,7 +29,6 @@
           <option value="0" selected>Scene</option>
           <option value="1">Depth Map</option>
         </select>
-
         <div id="depthMapSettings">
           Show Depth Cascade:
           <input id="depthCascade" type="number" min="1" max="8" step="1"/>
@@ -66,12 +65,24 @@
       </div>
     </details>
     <details>
+      <summary>Shadows Settings:</summary>
+      <div class="settings-block">
+        <div class="group"></div>
+        Shadow Map Static:
+        <input id="shadowMapOn" type="checkbox"/>
+        <br/>
+        Shadow Map Dynamic:
+        <input id="shadowMapDynamicOn" type="checkbox"/>
+        <br/>
+        Analytic Shadows:
+        <input id="AnalyticShadowsOn" type="checkbox"/>
+        <br/>
+      </div>
+    </details>
+    <details>
       <summary>Shadow Map Settings:</summary>
       <div class="settings-block">
         <div class="group"></div>
-        Shadow Map:
-        <input id="shadowMapOn" type="checkbox"/>
-        <br/>
         Number of Samples Under Root: 
         <input id="numberOfSamples" type="number" min="0" max="20" step="2"/>
         <br/>
@@ -95,9 +106,6 @@
       <summary>Analytic Shadows Settings:</summary>
       <div class="settings-block">
         <div class="group"></div>
-        Analytic Shadows:
-        <input id="AnalyticShadowsOn" type="checkbox"/>
-        <br/>
         Cone Angle: 
         <input id="coneAngle" type="number" min="0" max="180" step="2"/>
         <br/>
@@ -110,12 +118,6 @@
         Ambient Strength: 
         <input id="ambStrength" type="number" min="0" max="2" step="0.05"/>
         <br/>
-      </div>
-    </details>
-    <details>
-      <summary>Analytic Shadows Grid:</summary>
-      <div class="settings-block">
-        <div class="group"></div>
         Number of tiles X:
         <input id="tilesX" type="number" min="1" max="100" step="1"/>
         <br/>
@@ -140,10 +142,11 @@
       </div>
     </details>
     <details>
-      <summary>Stats</summary>
+      <summary>memory</summary>
       <div>
-        <p id="fps-counter">FPS: 0</p>
-        <p id="mpf-counter">AVG MPF: 0</p>
+        <p id="total-memory">TOTAL: 0 Kb</p>
+        <p id="buffer-memory">BUFFERS: 0 Kb</p>
+        <p id="textures-memory">TEXTURES: 0 Kb</p>
       </div>
     </details>
     

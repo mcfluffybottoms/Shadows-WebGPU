@@ -168,8 +168,6 @@ export async function createLastTestScene(
     ApproxedGeometries.set(carMesh4[0], approxedCar4);
     dynamicEntities.push(carMesh4[0]);
 
-
-    console.log(ApproxedGeometries)
     return { staticEntities, dynamicEntities, light, paths, cameraConfig: mainConfig };
 }
 

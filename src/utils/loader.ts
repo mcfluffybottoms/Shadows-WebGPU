@@ -18,7 +18,6 @@ export function loadMeshFromLink(path: string): Promise<THREE.Group> {
         loader.load(
             path,
             (root) => {
-                console.log('Children:', root);
                 resolve(root.scene);
             },
             undefined,

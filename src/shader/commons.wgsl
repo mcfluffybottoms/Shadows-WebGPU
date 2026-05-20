@@ -9,7 +9,6 @@ const NUM_POSSIBLE_OCCLUDERS = 32u;
 const WORKGROUP_SIZE_X = 8u;
 const WORKGROUP_SIZE_Y = 8u;
 const TOTAL_THREADS = WORKGROUP_SIZE_X * WORKGROUP_SIZE_Y;
-const influenceRadius = 10.0;
 
 
 // objects data
@@ -39,6 +38,7 @@ struct LightOptionsUniforms {
 // configuration
 struct Config {
     shadowMapOn: u32,
+    shadowMapDynamicOn: u32,
     analyticShadowsOn: u32,
     samplesPerSide: u32,
     numOfCascades: u32,
@@ -68,7 +68,6 @@ struct CameraUniforms {
 }
 
 // appproximators by simple objects
-
 struct OcclusionOutput {
     count: vec4f, // count + radius
     indices: array<u32, NUM_POSSIBLE_OCCLUDERS>,

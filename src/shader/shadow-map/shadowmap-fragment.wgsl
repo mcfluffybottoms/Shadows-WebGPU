@@ -50,8 +50,6 @@ fn getCascadeId(in: FragmentIn) -> u32 {
 
 fn getBias(projCoords: vec3f) -> f32 {
     var bias = config.biasValue;
-    if (config.biasType == 0) {
-    }
     let maxBias = config.biasValue;
     let baseBias = bias;
     let dx = dpdx(projCoords.z);
@@ -95,20 +93,26 @@ fn shadowCalculation(in: FragmentIn, normal: vec3f, lightDir: vec3f) -> f32 {
     for (var i = -1 * halfWindow; i <= halfWindow; i++) {
         for (var j = -1 * halfWindow; j <= halfWindow; j++) {
             let offset = vec2f(f32(i), f32(j)) * texelSize;
-            let staticSample = textureSampleCompare(
-                staticDepthTex, 
-                depthSampler,
-                snappedCoords + offset,
-                cascadeId,
-                projCoords.z - bias
-            );
-            let dynamicSample = textureSampleCompare(
-                dynamicDepthTex, 
-                depthSampler,
-                snappedCoords + offset,
-                cascadeId,
-                projCoords.z - bias
-            );
+            var staticSample = 1.0;
+            var dynamicSample = 1.0;
+            if (config.shadowMapOn == u32(1)) {
+                staticSample = textureSampleCompare(
+                    staticDepthTex, 
+                    depthSampler,
+                    snappedCoords + offset,
+                    cascadeId,
+                    projCoords.z - bias
+                );
+            }
+            if (config.shadowMapDynamicOn == u32(1)) {
+                dynamicSample = textureSampleCompare(
+                    dynamicDepthTex, 
+                    depthSampler,
+                    snappedCoords + offset,
+                    cascadeId,
+                    projCoords.z - bias
+                );
+            }
 
             shadow += staticSample * dynamicSample;
         }

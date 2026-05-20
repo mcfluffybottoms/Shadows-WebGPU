@@ -58,7 +58,6 @@ export function initUInteractions(): void {
         const cameraSelect = document.getElementById('cameraType') as HTMLSelectElement;
         UI.cameraType = cameraSelect.value == "0" ? cameraWhat.Perspective : cameraWhat.Orthographic;
         UIFlags.cameraType = true;
-        console.log(`Camera changed to: ${UI.cameraType}`); 
     });
 
     // change shadow map on/off
@@ -213,6 +212,13 @@ export function initUInteractions(): void {
         UI.depthMapType = Number(input.value);
     });
 
+    // depthMapType
+   document.getElementById('shadowMapDynamicOn')?.addEventListener('change', () => {
+        const shadowMapCheckbox = document.getElementById('shadowMapDynamicOn') as HTMLInputElement;
+        UI.shadowMapDynamic = shadowMapCheckbox.checked;
+        UIFlags.configChanged = true;
+    });
+
 }
 
 export function changeFPS(fps: number) {
@@ -222,6 +228,19 @@ export function changeFPS(fps: number) {
         return;
     }
     fpsElement.textContent = "FPS: " + fps.toString();
+}
+
+export function changeMemory(total: number, buffer: number, texture: number) {
+    var totalElement = document.getElementById('total-memory');
+    var bufferElement = document.getElementById('buffer-memory');
+    var texturesElement = document.getElementById('textures-memory');
+    if (!totalElement || !bufferElement || !texturesElement) {
+        console.warn('Elements not found');
+        return;
+    }
+    totalElement.textContent = "TOTAL: " + (total / 1024).toString() + " Kb";
+    bufferElement.textContent = "BUFFERS: " + (buffer / 1024).toString() + " Kb";
+    texturesElement.textContent = "TEXTURES: " + (texture / 1024).toString() + " Kb";
 }
 
 export function changeMPF(avgMpf: number) {

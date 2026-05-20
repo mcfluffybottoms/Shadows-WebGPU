@@ -8,7 +8,7 @@ export type ConfigBuffers = {
 export function createConfigBuffers(
     gpu: WebGPUData
 ) : ConfigBuffers {
-    const configBufferSize = 12 * Uint32Array.BYTES_PER_ELEMENT + 6 * Float32Array.BYTES_PER_ELEMENT;
+    const configBufferSize = 13 * Uint32Array.BYTES_PER_ELEMENT + 6 * Float32Array.BYTES_PER_ELEMENT;
 
     const configBuffer = gpu.device.createBuffer({
         size: configBufferSize,
@@ -24,8 +24,9 @@ export function createConfigBuffers(
 export function fillConfigBuffers(
     gpu: WebGPUData,
     buffers: ConfigBuffers,
-    shadows: boolean,
-    a_shadows: boolean,
+    shadowMap: boolean,
+    shadowMapDynamic: boolean,
+    aShadows: boolean,
     numberOfSamples: number,
     numberOfCascades: number,
     biasType: number,
@@ -49,24 +50,25 @@ export function fillConfigBuffers(
     const uint32View = new Uint32Array(dataArray);
     const float32View = new Float32Array(dataArray);
     
-    uint32View[0] = shadows ? 1 : 0;
-    uint32View[1] = a_shadows ? 1 : 0;
-    uint32View[2] = numberOfSamples;
-    uint32View[3] = numberOfCascades;
-    uint32View[4] = biasType;
-    uint32View[5] = lightOn ? 1 : 0;
-    uint32View[6] = cascadeLayers ? 1 : 0;
-    uint32View[7] = seeGrid ? 1 : 0;
-    uint32View[8] = directionalOn ? 1 : 0;
-    uint32View[9] = ambientOn ? 1 : 0;
-    uint32View[10] = tilesX;
-    uint32View[11] = tilesY;
-    float32View[12] = biasValue;
-    float32View[13] = lightAmbient;
-    float32View[14] = coneAngle;
-    float32View[15] = hemisphereRadius;
-    float32View[16] = dirStrength;
-    float32View[17] = ambStrength;
+    uint32View[0] = shadowMap ? 1 : 0;
+    uint32View[1] = shadowMapDynamic ? 1 : 0;
+    uint32View[2] = aShadows ? 1 : 0;
+    uint32View[3] = numberOfSamples;
+    uint32View[4] = numberOfCascades;
+    uint32View[5] = biasType;
+    uint32View[6] = lightOn ? 1 : 0;
+    uint32View[7] = cascadeLayers ? 1 : 0;
+    uint32View[8] = seeGrid ? 1 : 0;
+    uint32View[9] = directionalOn ? 1 : 0;
+    uint32View[10] = ambientOn ? 1 : 0;
+    uint32View[11] = tilesX;
+    uint32View[12] = tilesY;
+    float32View[13] = biasValue;
+    float32View[14] = lightAmbient;
+    float32View[15] = coneAngle;
+    float32View[16] = hemisphereRadius;
+    float32View[17] = dirStrength;
+    float32View[18] = ambStrength;
     
 
     gpu.device.queue.writeBuffer(configBuffer, 0, dataArray);

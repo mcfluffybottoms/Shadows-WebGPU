@@ -105,6 +105,7 @@ export async function initRender(
         gpu,
         configBuffer,
         UI.shadowMap,
+        UI.shadowMapDynamic,
         UI.analyticShadowsOn,
         UI.numberOfSamples,
         UI.numOfCascades,
@@ -220,6 +221,7 @@ export async function updateRenderFromUI(
             renderData.gpu,
             renderData.configBuffers,
             UI.shadowMap,
+            UI.shadowMapDynamic,
             UI.analyticShadowsOn,
             UI.numberOfSamples,
             UI.numOfCascades,
@@ -377,21 +379,25 @@ export async function renderFrame(
         { objects: true, model: uiChanged }
     );
 
-    if(renderData.scene.staticEntities.length > 0 && UI.shadowMap && (cameraChanged || uiChanged)) await depthPass(
-        renderData.depthPassResources,
-        encoder,
-        renderData.scene,
-        UI.numOfCascades,
-        true
-    );
-
-    if(UI.shadowMap) await depthPass(
-        renderData.depthPassResources,
-        encoder,
-        renderData.scene,
-        UI.numOfCascades,
-        false
-    );
+    if(UI.shadowMap && renderData.scene.staticEntities.length > 0 && (cameraChanged || uiChanged)) {
+        await depthPass(
+            renderData.depthPassResources,
+            encoder,
+            renderData.scene,
+            UI.numOfCascades,
+            true
+        );
+    }
+        
+    if(UI.shadowMapDynamic && UI.shadowMap) {
+        await depthPass(
+            renderData.depthPassResources,
+            encoder,
+            renderData.scene,
+            UI.numOfCascades,
+            false
+        );
+    }
 
     if(UI.analyticShadowsOn) {
         await depthPassAll(
@@ -411,7 +417,4 @@ export async function renderFrame(
     renderData.gpu.device.queue.submit([encoder.finish()]);
 
     renderData.scene.cameraConfig.controls.update();
-}
-function debugSphere(gpu: WebGPUData, mainConfig: CameraConfig, direction: THREE.Vector3) {
-    throw new Error('Function not implemented.');
 }
