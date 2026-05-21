@@ -95,7 +95,7 @@ fn shadowCalculation(in: FragmentIn, normal: vec3f, lightDir: vec3f) -> f32 {
             let offset = vec2f(f32(i), f32(j)) * texelSize;
             var staticSample = 1.0;
             var dynamicSample = 1.0;
-            if (config.shadowMapOn == u32(1)) {
+            if (config.shadowMapOn == 1) {
                 staticSample = textureSampleCompare(
                     staticDepthTex, 
                     depthSampler,
@@ -104,7 +104,7 @@ fn shadowCalculation(in: FragmentIn, normal: vec3f, lightDir: vec3f) -> f32 {
                     projCoords.z - bias
                 );
             }
-            if (config.shadowMapDynamicOn == u32(1)) {
+            if (config.shadowMapDynamicOn == 1) {
                 dynamicSample = textureSampleCompare(
                     dynamicDepthTex, 
                     depthSampler,
@@ -132,13 +132,13 @@ fn sphericalCapIntersectionApprox(
 ) -> f32 {
     var area: f32 = 0.0;
 
-    if(dist >= radius1 + radius2) {
+    if (dist >= radius1 + radius2) {
         return area;
     }
 
     area = 6.283185308 - 6.283185308 * cos(min(radius1, radius2));
 
-    if(dist > max(radius1, radius2) - min(radius1, radius2)) {
+    if (dist > max(radius1, radius2) - min(radius1, radius2)) {
         let diff = abs(radius1 - radius2);
         area *= smoothstep(0.0, 1.0, 1.0 - saturate((dist - diff)/(radius1 + radius2 - diff)));
     }
@@ -186,7 +186,7 @@ fn combineOcclusion(existing: f32, newOcclusion: f32) -> f32 {
     return 1.0 - combinedLight;
 }
 
-fn shadowCalculation1(in: FragmentIn, normal: vec3f, lightDir: vec3f, config: Config) -> vec2f {
+fn shadowCalculationAnalytic(in: FragmentIn, normal: vec3f, lightDir: vec3f, config: Config) -> vec2f {
     let ndc = in.clipPos.xy / in.clipPos.w;
     let screenPos = vec2<f32>(
         (ndc.x * 0.5 + 0.5) * f32(SCREEN.x),
@@ -207,10 +207,6 @@ fn shadowCalculation1(in: FragmentIn, normal: vec3f, lightDir: vec3f, config: Co
         let occluder = occluders[occluderId];
 
         let eid = occludersEntityIds[occluderId];
-        if (in.entityId == eid[1]) {
-            continue;
-        }
-
         let modelMatrix = occludersMatrix[eid[0]].modelMatrix;
         let scale = occludersMatrix[eid[0]].scale;
         var centerPos_world = modelMatrix * vec4f(
@@ -239,7 +235,7 @@ fn shadowCalculation1(in: FragmentIn, normal: vec3f, lightDir: vec3f, config: Co
         }
     }
 
-    return vec2f(1.0 - dyn, amb);
+    return vec2f(dyn, 0.1 * amb);
 }
 
 @fragment
@@ -262,14 +258,12 @@ fn main(in: FragmentIn) -> @location(0) vec4f {
     var cascadeId = getCascadeId(in);
 
     if (config.analyticShadowsOn == 1) {
-        let components = shadowCalculation1(in, normal, lightDir, config);
-        shadow = components[0] * config.dirStrength;
-        amb -= components[1] * config.ambStrength;
+        let components = shadowCalculationAnalytic(in, normal, lightDir, config);
+        shadow -= mix(0.0, components[0], config.dirStrength);
+        amb -= mix(0.0, components[1], config.ambStrength);
     }
 
-    if (config.shadowMapOn == 1) {
-        shadow *= mix(1.0, shadowCalculation(in, normal, lightDir), 0.5);
-    } 
+    shadow *= mix(1.0, shadowCalculation(in, normal, lightDir), 0.5);
 
     // lighting
     if (config.cascadeLayers == 1) {
@@ -279,15 +273,15 @@ fn main(in: FragmentIn) -> @location(0) vec4f {
     var lighting = color;
 
     // light
-    if(config.lightOn == 1) {
+    if (config.lightOn == 1) {
         lighting = (amb + shadow * (diffuse + 0.0)) * color;
     } else {
         lighting = shadow * color;
     }
 
-    // DEBUG - cascades
+    // DEBUG - CASCADES
     var finalColor = lighting;
-    if(config.shadowMapOn == 1 && config.cascadeLayers == 1) {
+    if (config.shadowMapOn == 1 && config.cascadeLayers == 1) {
         finalColor = mix(lighting, lighting * colors[cascadeId], 0.3);
     }
 

@@ -1,18 +1,3 @@
-// ./Manifold/build/manifold ../armadillo.obj ../armadillo_manifold.obj
-
-// https://github.com/111116/sphere-set-approximation
-// https://github.com/hjwdzh/Manifold
-// https://github.com/tunabrain/tungsten.git
-
-// tungsten scene.json
-
-
-fn sphereIntersectsAABB(box: AABB, center: vec3f, radius: f32, dir: vec3f) -> bool {
-    let vDelta = max(vec3f(0.0), abs(box.c - center) - box.e);
-	let fDistSq = dot(vDelta, vDelta);
-	return fDistSq <= radius * radius;
-}
-
 struct Frustum {
     corners: array<Ray, 4>,
 };
@@ -112,11 +97,6 @@ fn reconstructViewPos(
     return p.xyz;
 }
 
-struct AABB {
-    c: vec3f,
-    e: vec3f,
-}
-
 fn getTileFrustum(
     ndcMinX: f32, ndcMaxX: f32,
     ndcMinY: f32, ndcMaxY: f32,
@@ -144,40 +124,6 @@ fn getTileFrustum(
     return Frustum(pts);
 }
 
-fn getTileAABB(
-    ndcMinX: f32, ndcMaxX: f32,
-    ndcMinY: f32, ndcMaxY: f32,
-    nearZ: f32, farZ: f32,
-    invProj: mat4x4<f32>,
-    config: Config
-) -> AABB {
-    let p0 = reconstructViewPos(vec3f(ndcMinX, ndcMinY, nearZ), invProj);
-    let p1 = reconstructViewPos(vec3f(ndcMaxX, ndcMinY, nearZ), invProj);
-    let p2 = reconstructViewPos(vec3f(ndcMaxX, ndcMaxY, nearZ), invProj);
-    let p3 = reconstructViewPos(vec3f(ndcMinX, ndcMaxY, nearZ), invProj);
-
-    let p4 = reconstructViewPos(vec3f(ndcMinX, ndcMinY, farZ), invProj);
-    let p5 = reconstructViewPos(vec3f(ndcMaxX, ndcMinY, farZ), invProj);
-    let p6 = reconstructViewPos(vec3f(ndcMaxX, ndcMaxY, farZ), invProj);
-    let p7 = reconstructViewPos(vec3f(ndcMinX, ndcMaxY, farZ), invProj);
-
-    var mn = p0;
-    var mx = p0;
-
-    let pts = array<vec3f, 8>(p0,p1,p2,p3,p4,p5,p6,p7);
-
-    for (var i = 1u; i < 8u; i++) {
-        mn = min(mn, pts[i]);
-        mx = max(mx, pts[i]);
-    }
-
-    var aabb = AABB(vec3f(0.0), vec3f(0.0));
-    aabb.c = (mn + mx) * 0.5;
-    aabb.e = abs(mx - aabb.c);
-
-    return aabb;
-}
-
 @group(0) @binding(0) var<storage, read> occluders: array<SphereOccluder>;
 @group(0) @binding(1) var<storage, read> occludersMatrix: array<SphereOptions>;
 @group(0) @binding(2) var<storage, read_write> occlusionResults: array<OcclusionOutput>;
@@ -188,6 +134,7 @@ fn getTileAABB(
 @group(1) @binding(2) var<uniform> config: Config;
 @group(1) @binding(3) var depthTex: texture_depth_2d;
 @group(1) @binding(4) var depthSampler: sampler;
+
 /*
     One work group getting one tile
     Get all occluders in parallel
@@ -270,7 +217,7 @@ fn main(@builtin(global_invocation_id) globalId: vec3<u32>,
     minD = sharedMin[0];
     maxD = sharedMax[0];
 
-    // get aabb
+    // get frustum
     let frustum = getTileFrustum(
         ndcMinX, ndcMaxX, 
         ndcMinY, ndcMaxY, 
@@ -292,7 +239,9 @@ fn main(@builtin(global_invocation_id) globalId: vec3<u32>,
         var centerPos = camera.viewMatrix * modelMatrix * vec4f(occluders[i].center.xyz, 1.0);
         let worldRadius = occluders[i].center.w * scale[0];
 
-        let cylinder = createCylinder(centerPos.xyz, worldRadius + 5.0, lightDir);
+        let coneAngleRad = config.coneAngle * DEG_TO_RAD;
+        let cylinderRadius = worldRadius + 10.0 * tan(coneAngleRad);
+        let cylinder = createCylinder(centerPos.xyz, cylinderRadius, lightDir);
         if (cylinderIntersectsFrustum(cylinder, frustum)) {
             let index = atomicAdd(&numOccluders, 1u);
             sharedOccluders[index] = i;

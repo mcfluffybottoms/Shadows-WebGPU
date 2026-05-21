@@ -18,7 +18,7 @@ export type OccluderBuffers = {
   occluderInfos: Map<Entity, OccluderInfo>;
 };
 
-const MAX_NUM_OCCLUDERS = 32.0;
+const MAX_NUM_OCCLUDERS = 256.0;
 const SPHERE_SIZE = 4;
 const MODEL_MATRIX = 16 + 4;
 

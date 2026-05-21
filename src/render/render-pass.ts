@@ -44,7 +44,7 @@ function createEntityBindGroups(
             }
             for (const c of components) {
                 const bindGroup = gpu.device.createBindGroup({
-                    label: 'shadowpass-entityBindGroups' + e.id + "-" + offset,
+                    label: 'shadowpass-entityBindGroups' + e.id + '-' + offset,
                     layout: pipeline.getBindGroupLayout(0),
                     entries: [
                         {
@@ -83,7 +83,8 @@ function createEntityBindGroups(
                         },
                         {
                             binding: 5,
-                            resource: c.RenderComponent.mesh.texture?.createView(),
+                            resource:
+                                c.RenderComponent.mesh.texture?.createView(),
                         },
                         {
                             binding: 6,
@@ -94,7 +95,7 @@ function createEntityBindGroups(
                                 minFilter: 'linear',
                                 mipmapFilter: 'linear',
                             }),
-                        }
+                        },
                     ],
                 });
                 offset++;

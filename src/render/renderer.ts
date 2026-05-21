@@ -33,11 +33,12 @@ import {
     RenderPass,
     RenderPassResources,
 } from './render-pass';
+import { initRenderDepthPass, renderDepthPass } from './depth-map-debug';
 import {
-    initRenderDepthPass,
-    renderDepthPass
-} from './depth-map-debug';
-import { GeometryToPrecompute, PrecomputedGeometry, Scene } from '../scene/scene-types';
+    GeometryToPrecompute,
+    PrecomputedGeometry,
+    Scene,
+} from '../scene/scene-types';
 import {
     cameraWhat,
     renderWhat,
@@ -46,9 +47,19 @@ import {
     UIConfig,
     UIFlags,
 } from '../UI/UI-flags-types';
-import { createOccluderBuffers, fillOccluderBuffers, OccluderBuffers } from '../config/occluder-buffer';
-import { AnalyticPassResources, aPass, initAPass } from './analytic-shadow-pass';
-import { createLastTestScene, createStaticTestScene, createTestScene, debugTwoApproxedCars, manyCars, sceneDoubleShadow, sceneWithOneSphere, threeApproxedCars } from './scene-creator';
+import {
+    createOccluderBuffers,
+    fillOccluderBuffers,
+    OccluderBuffers,
+} from '../config/occluder-buffer';
+import {
+    AnalyticPassResources,
+    aPass,
+    initAPass,
+} from './analytic-shadow-pass';
+import {
+    createLastTestScene
+} from './scene-creator';
 import { PrecomputeOccluders } from './precompute/precompute-occluded';
 
 export type RenderInfo = {
@@ -83,11 +94,7 @@ export async function initRender(
     };
 
     // get test scene
-    let scene = await manyCars(
-        gpu,
-        mainConfig,
-        UI.direction
-    );
+    let scene = await createLastTestScene(gpu, mainConfig, UI.direction);
 
     // load view proj matrices
     const { viewProjMatrix, splits } = scene.light.getNewViewProjMatrix(
@@ -134,12 +141,11 @@ export async function initRender(
         splits,
         { camera: true, light: true, staticObj: true, dynamicObj: true }
     );
-    if (UI.analyticShadowsOn) fillOccluderBuffers(
-        gpu,
-        occluderBuffers,
-        scene,
-        { objects: true, model: true }
-    );
+    if (UI.analyticShadowsOn)
+        fillOccluderBuffers(gpu, occluderBuffers, scene, {
+            objects: true,
+            model: true,
+        });
 
     // create resources
     var depthPassResources = await initDepthPass(
@@ -191,17 +197,23 @@ export async function initRender(
         depthPassResources: depthPassResources,
         renderPassResources: renderPassResources,
         aPassResources: aPassResources,
-        depthPassForAPassResources: depthPassForAPassResources
+        depthPassForAPassResources: depthPassForAPassResources,
     };
 
     updateRenderFromUI(renderData, UI, flags);
-
 
     // get preoccluded data
     for (const entity of GeometryToPrecompute) {
         const encoder = renderData.gpu.device.createCommandEncoder();
         const texture = PrecomputeOccluders(
-            gpu, encoder, scene, sceneBuffers, configBuffer, occluderBuffers, entity);
+            gpu,
+            encoder,
+            scene,
+            sceneBuffers,
+            configBuffer,
+            occluderBuffers,
+            entity
+        );
         renderData.gpu.device.queue.submit([encoder.finish()]);
         PrecomputedGeometry.set(entity, await texture);
     }
@@ -315,8 +327,7 @@ export async function getMainTexture(
     encoder: GPUCommandEncoder,
     option: renderWhat
 ) {
-    let { gpu, renderPassResources, scene } =
-        renderData;
+    let { gpu, renderPassResources, scene } = renderData;
     if (option == renderWhat.depthMap) {
         let map: DepthMap | undefined = undefined;
         switch (UI.depthMapType) {
@@ -332,16 +343,19 @@ export async function getMainTexture(
             default:
                 console.warn('Unknown depth map type:', UI.depthMapType);
         }
-        if(map == undefined) {
+        if (map == undefined) {
             return;
         }
-        var renderDepthPassResources = await initRenderDepthPass(gpu, map, UI.depthMapCascade);
+        var renderDepthPassResources = await initRenderDepthPass(
+            gpu,
+            map,
+            UI.depthMapCascade
+        );
         await renderDepthPass(renderDepthPassResources, gpu, encoder);
     } else {
         await RenderPass(renderPassResources, gpu, encoder, scene);
     }
 }
-
 
 export async function renderFrame(
     renderData: RenderInfo,
@@ -354,12 +368,13 @@ export async function renderFrame(
 
     const cameraChanged = isCameraChanged(renderData.scene.cameraConfig);
 
-    const { viewProjMatrix, splits } = renderData.scene.light.getNewViewProjMatrix(
-        renderData.scene.cameraConfig.camera,
-        UI.numOfCascades,
-        UI.depthPassSize,
-        UI.lambda
-    );
+    const { viewProjMatrix, splits } =
+        renderData.scene.light.getNewViewProjMatrix(
+            renderData.scene.cameraConfig.camera,
+            UI.numOfCascades,
+            UI.depthPassSize,
+            UI.lambda
+        );
 
     fillSceneBuffers(
         renderData.gpu,
@@ -369,17 +384,27 @@ export async function renderFrame(
         UI.numOfCascades,
         viewProjMatrix,
         splits,
-        { camera: cameraChanged, light: true, staticObj: false, dynamicObj: true }
+        {
+            camera: cameraChanged,
+            light: true,
+            staticObj: false,
+            dynamicObj: true,
+        }
     );
 
-    if(UI.analyticShadowsOn) fillOccluderBuffers(
-        renderData.gpu,
-        renderData.occluderBuffers,
-        renderData.scene,
-        { objects: true, model: uiChanged }
-    );
+    if (UI.analyticShadowsOn)
+        fillOccluderBuffers(
+            renderData.gpu,
+            renderData.occluderBuffers,
+            renderData.scene,
+            { objects: true, model: uiChanged }
+        );
 
-    if(UI.shadowMap && renderData.scene.staticEntities.length > 0 && (cameraChanged || uiChanged)) {
+    if (
+        UI.shadowMap &&
+        renderData.scene.staticEntities.length > 0 &&
+        (cameraChanged || uiChanged)
+    ) {
         await depthPass(
             renderData.depthPassResources,
             encoder,
@@ -388,8 +413,8 @@ export async function renderFrame(
             true
         );
     }
-        
-    if(UI.shadowMapDynamic && UI.shadowMap) {
+
+    if (UI.shadowMapDynamic) {
         await depthPass(
             renderData.depthPassResources,
             encoder,
@@ -399,18 +424,14 @@ export async function renderFrame(
         );
     }
 
-    if(UI.analyticShadowsOn) {
+    if (UI.analyticShadowsOn) {
         await depthPassAll(
             renderData.depthPassForAPassResources,
             encoder,
             renderData.scene,
             1.0
         );
-        await aPass(
-            renderData.aPassResources,
-            encoder,
-            renderData.scene
-        );
+        await aPass(renderData.aPassResources, encoder, renderData.scene);
     }
 
     await getMainTexture(renderData, encoder, UI.renderWhat);

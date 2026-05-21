@@ -1,6 +1,6 @@
 {"primitives":[
   {
-    "sphere": "sphere",
+    "type": "sphere",
     "transform": {
       "position": [
         -17.211458206176758,
@@ -11,7 +11,7 @@
     }
   },
   {
-    "sphere": "sphere",
+    "type": "sphere",
     "transform": {
       "position": [
         -17.211458206176758,
@@ -22,7 +22,7 @@
     }
   },
   {
-    "sphere": "sphere",
+    "type": "sphere",
     "transform": {
       "position": [
         -12.354631423950195,
@@ -33,7 +33,7 @@
     }
   },
   {
-    "sphere": "sphere",
+    "type": "sphere",
     "transform": {
       "position": [
         -22.754749298095703,
@@ -44,7 +44,7 @@
     }
   },
   {
-    "sphere": "sphere",
+    "type": "sphere",
     "transform": {
       "position": [
         -16.742639541625977,
@@ -55,7 +55,7 @@
     }
   },
   {
-    "sphere": "sphere",
+    "type": "sphere",
     "transform": {
       "position": [
         -16.691627502441406,
@@ -66,7 +66,7 @@
     }
   },
   {
-    "sphere": "sphere",
+    "type": "sphere",
     "transform": {
       "position": [
         -16.742639541625977,
@@ -77,7 +77,7 @@
     }
   },
   {
-    "sphere": "sphere",
+    "type": "sphere",
     "transform": {
       "position": [
         -16.691627502441406,
@@ -88,7 +88,7 @@
     }
   },
   {
-    "sphere": "sphere",
+    "type": "sphere",
     "transform": {
       "position": [
         -14.168573379516602,
@@ -99,7 +99,7 @@
     }
   },
   {
-    "sphere": "sphere",
+    "type": "sphere",
     "transform": {
       "position": [
         -0.5447224378585815,
@@ -110,7 +110,7 @@
     }
   },
   {
-    "sphere": "sphere",
+    "type": "sphere",
     "transform": {
       "position": [
         -0.5447224378585815,
@@ -121,7 +121,7 @@
     }
   },
   {
-    "sphere": "sphere",
+    "type": "sphere",
     "transform": {
       "position": [
         1.0360660552978516,
@@ -132,7 +132,7 @@
     }
   },
   {
-    "sphere": "sphere",
+    "type": "sphere",
     "transform": {
       "position": [
         -0.2685222625732422,
@@ -143,7 +143,7 @@
     }
   },
   {
-    "sphere": "sphere",
+    "type": "sphere",
     "transform": {
       "position": [
         -0.2911258935928345,
@@ -154,7 +154,7 @@
     }
   },
   {
-    "sphere": "sphere",
+    "type": "sphere",
     "transform": {
       "position": [
         -1.0895459651947021,
@@ -165,7 +165,7 @@
     }
   },
   {
-    "sphere": "sphere",
+    "type": "sphere",
     "transform": {
       "position": [
         -11.208064079284668,
@@ -176,7 +176,7 @@
     }
   },
   {
-    "sphere": "sphere",
+    "type": "sphere",
     "transform": {
       "position": [
         -23.836151123046875,
@@ -187,7 +187,7 @@
     }
   },
   {
-    "sphere": "sphere",
+    "type": "sphere",
     "transform": {
       "position": [
         -31.786540985107422,
@@ -198,7 +198,7 @@
     }
   },
   {
-    "sphere": "sphere",
+    "type": "sphere",
     "transform": {
       "position": [
         -36.82063674926758,
@@ -209,7 +209,7 @@
     }
   },
   {
-    "sphere": "sphere",
+    "type": "sphere",
     "transform": {
       "position": [
         -27.775432586669922,
@@ -220,7 +220,7 @@
     }
   },
   {
-    "sphere": "sphere",
+    "type": "sphere",
     "transform": {
       "position": [
         -22.81237030029297,
@@ -231,7 +231,7 @@
     }
   },
   {
-    "sphere": "sphere",
+    "type": "sphere",
     "transform": {
       "position": [
         -26.55921745300293,
@@ -242,7 +242,7 @@
     }
   },
   {
-    "sphere": "sphere",
+    "type": "sphere",
     "transform": {
       "position": [
         -32.170433044433594,
@@ -253,7 +253,7 @@
     }
   },
   {
-    "sphere": "sphere",
+    "type": "sphere",
     "transform": {
       "position": [
         -28.61044692993164,
@@ -264,7 +264,7 @@
     }
   },
   {
-    "sphere": "sphere",
+    "type": "sphere",
     "transform": {
       "position": [
         -32.954769134521484,
@@ -275,7 +275,7 @@
     }
   },
   {
-    "sphere": "sphere",
+    "type": "sphere",
     "transform": {
       "position": [
         -27.80677032470703,
@@ -286,7 +286,7 @@
     }
   },
   {
-    "sphere": "sphere",
+    "type": "sphere",
     "transform": {
       "position": [
         -39.18568801879883,
@@ -297,7 +297,7 @@
     }
   },
   {
-    "sphere": "sphere",
+    "type": "sphere",
     "transform": {
       "position": [
         -28.526336669921875,
@@ -308,7 +308,7 @@
     }
   },
   {
-    "sphere": "sphere",
+    "type": "sphere",
     "transform": {
       "position": [
         28.306114196777344,
@@ -319,7 +319,7 @@
     }
   },
   {
-    "sphere": "sphere",
+    "type": "sphere",
     "transform": {
       "position": [
         32.73454284667969,
@@ -330,7 +330,7 @@
     }
   },
   {
-    "sphere": "sphere",
+    "type": "sphere",
     "transform": {
       "position": [
         38.96546173095703,
@@ -341,7 +341,7 @@
     }
   },
   {
-    "sphere": "sphere",
+    "type": "sphere",
     "transform": {
       "position": [
         27.58654022216797,
@@ -352,7 +352,7 @@
     }
   },
   {
-    "sphere": "sphere",
+    "type": "sphere",
     "transform": {
       "position": [
         28.390220642089844,
@@ -363,7 +363,7 @@
     }
   },
   {
-    "sphere": "sphere",
+    "type": "sphere",
     "transform": {
       "position": [
         31.95020294189453,
@@ -374,7 +374,7 @@
     }
   },
   {
-    "sphere": "sphere",
+    "type": "sphere",
     "transform": {
       "position": [
         26.3389892578125,
@@ -385,7 +385,7 @@
     }
   },
   {
-    "sphere": "sphere",
+    "type": "sphere",
     "transform": {
       "position": [
         22.592140197753906,
@@ -396,7 +396,7 @@
     }
   },
   {
-    "sphere": "sphere",
+    "type": "sphere",
     "transform": {
       "position": [
         27.555206298828125,
@@ -407,7 +407,7 @@
     }
   },
   {
-    "sphere": "sphere",
+    "type": "sphere",
     "transform": {
       "position": [
         36.60041046142578,
@@ -418,7 +418,7 @@
     }
   },
   {
-    "sphere": "sphere",
+    "type": "sphere",
     "transform": {
       "position": [
         31.566314697265625,
@@ -429,7 +429,7 @@
     }
   },
   {
-    "sphere": "sphere",
+    "type": "sphere",
     "transform": {
       "position": [
         23.615928649902344,
@@ -440,7 +440,7 @@
     }
   },
   {
-    "sphere": "sphere",
+    "type": "sphere",
     "transform": {
       "position": [
         10.987838745117188,
@@ -451,7 +451,7 @@
     }
   },
   {
-    "sphere": "sphere",
+    "type": "sphere",
     "transform": {
       "position": [
         13.948348999023438,
@@ -462,7 +462,7 @@
     }
   },
   {
-    "sphere": "sphere",
+    "type": "sphere",
     "transform": {
       "position": [
         16.471397399902344,
@@ -473,7 +473,7 @@
     }
   },
   {
-    "sphere": "sphere",
+    "type": "sphere",
     "transform": {
       "position": [
         16.522415161132812,
@@ -484,7 +484,7 @@
     }
   },
   {
-    "sphere": "sphere",
+    "type": "sphere",
     "transform": {
       "position": [
         16.471397399902344,
@@ -495,7 +495,7 @@
     }
   },
   {
-    "sphere": "sphere",
+    "type": "sphere",
     "transform": {
       "position": [
         16.522415161132812,
@@ -506,7 +506,7 @@
     }
   },
   {
-    "sphere": "sphere",
+    "type": "sphere",
     "transform": {
       "position": [
         22.534523010253906,
@@ -517,7 +517,7 @@
     }
   },
   {
-    "sphere": "sphere",
+    "type": "sphere",
     "transform": {
       "position": [
         12.134407043457031,
@@ -528,7 +528,7 @@
     }
   },
   {
-    "sphere": "sphere",
+    "type": "sphere",
     "transform": {
       "position": [
         16.991233825683594,
@@ -539,7 +539,7 @@
     }
   },
   {
-    "sphere": "sphere",
+    "type": "sphere",
     "transform": {
       "position": [
         16.991233825683594,

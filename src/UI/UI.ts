@@ -29,8 +29,6 @@ export function initUInteractions(): void {
     (document.getElementById('lambda') as HTMLInputElement).value = UI.lambda.toString();
 
     (document.getElementById('coneAngle') as HTMLInputElement).value = UI.coneAngle.toString();
-    (document.getElementById('hemisphereRadius') as HTMLInputElement).value = UI.hemisphereRadius.toString();
-
     (document.getElementById('dirStrength') as HTMLInputElement).value = UI.dirStrength.toString();
     (document.getElementById('ambStrength') as HTMLInputElement).value = UI.ambStrength.toString();
     (document.getElementById('tilesX') as HTMLInputElement).value = UI.tilesX.toString();
@@ -39,6 +37,7 @@ export function initUInteractions(): void {
     (document.getElementById('directionalOn') as HTMLInputElement).checked = true;
     (document.getElementById('ambientOn') as HTMLInputElement).checked = true;
     (document.getElementById('AnalyticShadowsOn') as HTMLInputElement).checked = false;
+    (document.getElementById('shadowMapDynamicOn') as HTMLInputElement).checked = false;
 
     hideDivElementById(UI.shadowMap, "depthMapSettings");
     let htmlElement = document.getElementById('depthCascade') as HTMLInputElement;
@@ -163,11 +162,6 @@ export function initUInteractions(): void {
         UI.coneAngle = sizeInput.valueAsNumber;
         UIFlags.configChanged = true;
     });
-    document.getElementById('hemisphereRadius')?.addEventListener('change', () => {
-        const sizeInput = document.getElementById('hemisphereRadius') as HTMLInputElement;
-        UI.hemisphereRadius = sizeInput.valueAsNumber;
-        UIFlags.configChanged = true;
-    });
 
     document.getElementById('dirStrength')?.addEventListener('change', () => {
         const sizeInput = document.getElementById('dirStrength') as HTMLInputElement;
@@ -216,6 +210,7 @@ export function initUInteractions(): void {
    document.getElementById('shadowMapDynamicOn')?.addEventListener('change', () => {
         const shadowMapCheckbox = document.getElementById('shadowMapDynamicOn') as HTMLInputElement;
         UI.shadowMapDynamic = shadowMapCheckbox.checked;
+        console.log(UI.shadowMapDynamic);
         UIFlags.configChanged = true;
     });
 

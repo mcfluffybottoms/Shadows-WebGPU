@@ -4,11 +4,9 @@ import { WebGPUData } from './webgpu-data';
 import {
     addEntity,
     addEntityFromMultiple,
-    Entity,
     modelType,
 } from '../scene/scene-types';
 import { ModelBuffers } from '../scene/buffer-types';
-import { getApproximatedGeometry } from './get-sphere-approximator';
 
 // --------------THREE JS PARSER FOR OBJ FILES-------------- //
 
