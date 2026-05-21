@@ -61,7 +61,7 @@ export function createOccluderBuffers(
         label: "OccluderBuffer-Options" 
     });
     const outputBuffer = gpu.device.createBuffer({
-        size: (250 * 250 * MAX_NUM_OCCLUDERS * 4) * Float32Array.BYTES_PER_ELEMENT,
+        size: (100 * 100 * MAX_NUM_OCCLUDERS * 4) * Float32Array.BYTES_PER_ELEMENT,
         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
         label: "OccluderOutputBuffer"
     });
