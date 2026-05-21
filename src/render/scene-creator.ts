@@ -1,8 +1,6 @@
 import * as THREE from 'three/webgpu';
 
-import {
-    CameraConfig,
-} from '../utils/camera-utils';
+import { CameraConfig } from '../utils/camera-utils';
 import { WebGPUData } from '../utils/webgpu-data';
 import {
     createEntityFromGeometry,
@@ -10,10 +8,14 @@ import {
     loadAndAddObject,
 } from '../utils/loader';
 import { DirectionalLight } from '../scene/light-types';
-import { ApproxedGeometries, ComponentsMap, Entity, modelType, Scene, updateApproxedGeometries } from '../scene/scene-types';
-import { Circle, Path, TestScenePath } from '../scene/movement/path';
-import carApprox from '../../public/assets/car_approx.json';
-import sphereApprox from '../../public/assets/sphere.json';
+import {
+    ApproxedGeometries,
+    Entity,
+    modelType,
+    Scene,
+    updateApproxedGeometries,
+} from '../scene/scene-types';
+import { Path } from '../scene/movement/path';
 import retepApprox from '../../public/assets/retep.json';
 import catApprox from '../../public/assets/cat.json';
 import { getApproximatedGeometry } from '../utils/get-sphere-approximator';
@@ -28,7 +30,7 @@ export async function createLastTestScene(
     light.direction = direction;
 
     // add static buildings
-    const obj = await loadAndAddObject('/assets/with_mechet.glb');
+    const obj = await loadAndAddObject('/Shadows-WebGPU/assets/with_mechet.glb');
     if (obj) {
         obj.scale.setScalar(0.1);
         obj.position.set(0, 0, 0);
@@ -54,47 +56,67 @@ export async function createLastTestScene(
     );
     staticEntities.push(plane);
 
-    let dynamicEntities = []
-    const paths: Path[] = []
+    let dynamicEntities = [];
+    const paths: Path[] = [];
 
     // add models
-    dynamicEntities.push(await loadCat(
-        gpu, 
-        new THREE.Vector3(5, 0.0, 14),
-        new THREE.Euler(0.0, 0.0, 0.0),
-        new THREE.Vector3(0.1, 0.1, 0.1)
-    ));
-    dynamicEntities.push(await loadCat(
-        gpu, 
-        new THREE.Vector3(20, 0.0, 4),
-        new THREE.Euler(0.0, 0.0, 0.0),
-        new THREE.Vector3(0.1, 0.1, 0.1)
-    ));
-    dynamicEntities.push(await loadCat(
-        gpu, 
-        new THREE.Vector3(-15, 0.0, 13),
-        new THREE.Euler(0.0, 0.0, 0.0),
-        new THREE.Vector3(0.1, 0.1, 0.1)
-    ));
-    dynamicEntities.push(await loadCat(
-        gpu, 
-        new THREE.Vector3(23, 0.0, -13),
-        new THREE.Euler(0.0, 0.0, 0.0),
-        new THREE.Vector3(0.15, 0.15, 0.15)
-    ));
-    dynamicEntities.push(await loadCat(
-        gpu, 
-        new THREE.Vector3(-13, 0.0, 13),
-        new THREE.Euler(0.0, 0.0, 0.0),
-        new THREE.Vector3(0.1, 0.1, 0.1)
-    ));
+    dynamicEntities.push(
+        await loadCat(
+            gpu,
+            new THREE.Vector3(5, 0.0, 14),
+            new THREE.Euler(0.0, 0.0, 0.0),
+            new THREE.Vector3(0.1, 0.1, 0.1)
+        )
+    );
+    dynamicEntities.push(
+        await loadCat(
+            gpu,
+            new THREE.Vector3(20, 0.0, 4),
+            new THREE.Euler(0.0, 0.0, 0.0),
+            new THREE.Vector3(0.1, 0.1, 0.1)
+        )
+    );
+    dynamicEntities.push(
+        await loadCat(
+            gpu,
+            new THREE.Vector3(-15, 0.0, 13),
+            new THREE.Euler(0.0, 0.0, 0.0),
+            new THREE.Vector3(0.1, 0.1, 0.1)
+        )
+    );
+    dynamicEntities.push(
+        await loadCat(
+            gpu,
+            new THREE.Vector3(23, 0.0, -13),
+            new THREE.Euler(0.0, 0.0, 0.0),
+            new THREE.Vector3(0.15, 0.15, 0.15)
+        )
+    );
+    dynamicEntities.push(
+        await loadCat(
+            gpu,
+            new THREE.Vector3(-13, 0.0, 13),
+            new THREE.Euler(0.0, 0.0, 0.0),
+            new THREE.Vector3(0.1, 0.1, 0.1)
+        )
+    );
 
-
-    return { staticEntities, dynamicEntities, light, paths, cameraConfig: mainConfig };
+    return {
+        staticEntities,
+        dynamicEntities,
+        light,
+        paths,
+        cameraConfig: mainConfig,
+    };
 }
 
-async function loadCat(gpu: WebGPUData, position: THREE.Vector3, rotation: THREE.Euler, scale: THREE.Vector3) {
-    let cat = await loadAndAddObject('/assets/retep_niffirg.glb');
+async function loadCat(
+    gpu: WebGPUData,
+    position: THREE.Vector3,
+    rotation: THREE.Euler,
+    scale: THREE.Vector3
+) {
+    let cat = await loadAndAddObject('/Shadows-WebGPU/assets/retep_niffirg.glb');
     if (cat) {
         cat.scale.set(scale.x, scale.y, scale.z);
         cat.position.set(position.x, position.y, position.z);
@@ -114,7 +136,11 @@ async function loadCat(gpu: WebGPUData, position: THREE.Vector3, rotation: THREE
     let approxedCat = getApproximatedGeometry(
         retepApprox,
         new THREE.Vector3(position.x - 0.1, position.y, position.z),
-        new THREE.Euler(3 * Math.PI / 2 + rotation.x, 0.0 + rotation.y, Math.PI + rotation.z),
+        new THREE.Euler(
+            (3 * Math.PI) / 2 + rotation.x,
+            0.0 + rotation.y,
+            Math.PI + rotation.z
+        ),
         scale
     );
     console.log(catApprox);
@@ -137,10 +163,12 @@ export async function sceneDoubleShadow(
     let dynamicEntities: Entity[] = [];
 
     // get first car
-    let cat = await loadCat(gpu,
+    let cat = await loadCat(
+        gpu,
         new THREE.Vector3(0, -0.5, 0),
         new THREE.Euler(0.0, 0.0, 0.0),
-        new THREE.Vector3(0.07, 0.07, 0.07));
+        new THREE.Vector3(0.07, 0.07, 0.07)
+    );
     dynamicEntities.push(cat);
 
     // get wall 1
@@ -176,7 +204,13 @@ export async function sceneDoubleShadow(
 
     const paths: Path[] = [];
 
-    return { staticEntities, dynamicEntities, light, paths, cameraConfig: mainConfig };
+    return {
+        staticEntities,
+        dynamicEntities,
+        light,
+        paths,
+        cameraConfig: mainConfig,
+    };
 }
 
 export async function createStaticTestScene(
@@ -214,8 +248,14 @@ export async function createStaticTestScene(
     );
     staticEntities.push(plane);
 
-    let dynamicEntities: Entity[] = []
-    const paths: Path[] = []
+    let dynamicEntities: Entity[] = [];
+    const paths: Path[] = [];
 
-    return { staticEntities, dynamicEntities, light, paths, cameraConfig: mainConfig };
+    return {
+        staticEntities,
+        dynamicEntities,
+        light,
+        paths,
+        cameraConfig: mainConfig,
+    };
 }
