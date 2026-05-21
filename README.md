@@ -1,1 +1,1 @@
-# diplomaMasters
+# Analytic Shadows in WebGPU
