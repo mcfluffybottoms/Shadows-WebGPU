@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Jump to a scene!</title>
+    <style>
+      body {
+        margin: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+      }
+      button {
+        background-color: #555555;
+        border: none;
+        color: white;
+        padding: 12px 24px;
+        text-align: center;
+        font-size: 16px;
+        cursor: pointer;
+        border-radius: 6px;
+      }
+
+      button:hover {
+        background-color: #000000;
+        transform: translateY(-2px);
+      }
+    </style>
+  </head>
+  <body>
+    <button
+      class="shadow-maps"
+      onclick="window.location.href='/scenes/main.html'"
+    >
+      Jump to Scene!
+    </button>
+  </body>
+</html>

@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>Map with Shadow Maps</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+  <div class="settings">
+    <details>
+      <summary>Camera Settings:</summary>
+      <div class="settings-block">
+        <div class="group"></div>
+        Camera Type:
+        <select id="cameraType" data-default="0">
+          <option value="0" selected>Perspective</option>
+          <option value="1">Orthographic</option>
+        </select>
+      </div>
+    </details>
+    <details>
+      <summary>See Depth map:</summary>
+      <div class="settings-block">
+        <div class="group"></div>
+        Render Settings:
+        <select id="render" data-default="0">
+          <option value="0" selected>Scene</option>
+          <option value="1">Depth Map</option>
+        </select>
+        <div id="depthMapSettings">
+          Show Depth Cascade:
+          <input id="depthCascade" type="number" min="1" max="8" step="1"/>
+          <br/>
+          Show Type:
+          <select id="depthMapType" data-default="0">
+            <option value="0" selected>Static</option>
+            <option value="1">Dynamic</option>
+            <option value="2">Analytic</option>
+          </select>
+          <br/>
+        </div>
+      </div>
+    </details>
+    <details>
+      <summary>Light Settings:</summary>
+      <div class="settings-block">
+        <div class="group"></div>
+        Direction x:
+        <input id="dirx" type="range" min="-1" max="1" step="0.01"/>
+        <br/>
+        Direction y:
+        <input id="diry" type="range" min="-1" max="0.1" step="0.01"/>
+        <br/>
+        Direction z:
+        <input id="dirz" type="range" min="0.1" max="1" step="0.01"/>
+        <br/>
+        Phong Light:
+        <input id="lightOn" type="checkbox"/>
+        <br/>
+        Light Ambient:
+        <input id="lightAmbient" type="number" min="0" max="1.0" step="0.05"/>
+        <br/>
+      </div>
+    </details>
+    <details>
+      <summary>Shadows Settings:</summary>
+      <div class="settings-block">
+        <div class="group"></div>
+        Shadow Map Static:
+        <input id="shadowMapOn" type="checkbox"/>
+        <br/>
+        Shadow Map Dynamic:
+        <input id="shadowMapDynamicOn" type="checkbox"/>
+        <br/>
+        Analytic Shadows:
+        <input id="AnalyticShadowsOn" type="checkbox"/>
+        <br/>
+      </div>
+    </details>
+    <details>
+      <summary>Shadow Map Settings:</summary>
+      <div class="settings-block">
+        <div class="group"></div>
+        Number of Samples Under Root: 
+        <input id="numberOfSamples" type="number" min="0" max="20" step="2"/>
+        <br/>
+        Number of Cascades: 
+        <input id="numberOfCascades" type="number" min="1" max="8" step="1"/>
+        <br/>
+        Cascades In Color:
+        <input id="cascadeLayers" type="checkbox"/>
+        <br/>
+        Depth Pass Size: 
+        <input id="depthPassSize" type="number" min="0" max="16384"/>
+        <br/>
+        Bias Value: 
+        <input id="biasValue" type="number" min="0" max="0.1" step="0.0001"/>
+        <br/>
+        Lambda: 
+        <input id="lambda" type="number" min="0" max="1" step="0.01"/>
+      </div>
+    </details>
+    <details>
+      <summary>Analytic Shadows Settings:</summary>
+      <div class="settings-block">
+        <div class="group"></div>
+        Cone Angle: 
+        <input id="coneAngle" type="number" min="0" max="30" step="1"/>
+        <br/>
+        Directional Strength: 
+        <input id="dirStrength" type="number" min="0" max="2" step="0.05"/>
+        <br/>
+        Ambient Strength: 
+        <input id="ambStrength" type="number" min="0" max="2" step="0.05"/>
+        <br/>
+        Number of tiles X:
+        <input id="tilesX" type="number" min="1" max="100" step="1"/>
+        <br/>
+        Number of tiles Y:
+        <input id="tilesY" type="number" min="1" max="100" step="1"/>
+        <br/>
+      </div>
+    </details>
+    <details>
+      <summary>Analytic Shadows Debug:</summary>
+      <div class="settings-block">
+        <div class="group"></div>
+        See grid:
+        <input id="seeGrid" type="checkbox"/>
+        <br/>
+        Directional:
+        <input id="directionalOn" type="checkbox"/>
+        <br/>
+        Ambient:
+        <input id="ambientOn" type="checkbox"/>
+        <br/>
+      </div>
+    </details>
+    <details>
+      <summary>memory</summary>
+      <div>
+        <p id="total-memory">TOTAL: 0 Kb</p>
+        <p id="buffer-memory">BUFFERS: 0 Kb</p>
+        <p id="textures-memory">TEXTURES: 0 Kb</p>
+      </div>
+    </details>
+    
+    
+  </div>
+
+
+  <script type="module" src="../src/main.ts"></script>
+  <canvas id="canvas"></canvas>
+
+</body>
+
+</html>

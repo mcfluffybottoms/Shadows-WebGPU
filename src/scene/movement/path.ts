@@ -1,0 +1,254 @@
+import { Entity } from "../scene-types";
+import { EventType } from "./systems";
+import * as THREE from "three/webgpu";
+
+type Point = {
+    x: number,
+    y: number
+};
+
+
+// loader
+export function Circle() : Point[] {
+    return [
+        {x: 10.000, y: 0.000},
+        {x: 9.980, y: 0.628},
+        {x: 9.921, y: 1.253},
+        {x: 9.823, y: 1.874},
+        {x: 9.686, y: 2.487},
+        {x: 9.511, y: 3.090},
+        {x: 9.298, y: 3.681},
+        {x: 9.048, y: 4.258},
+        {x: 8.763, y: 4.818},
+        {x: 8.443, y: 5.358},
+        {x: 8.090, y: 5.878},
+        {x: 7.705, y: 6.374},
+        {x: 7.290, y: 6.845},
+        {x: 6.845, y: 7.290},
+        {x: 6.374, y: 7.705},
+        {x: 5.878, y: 8.090},
+        {x: 5.358, y: 8.443},
+        {x: 4.818, y: 8.763},
+        {x: 4.258, y: 9.048},
+        {x: 3.681, y: 9.298},
+        {x: 3.090, y: 9.511},
+        {x: 2.487, y: 9.686},
+        {x: 1.874, y: 9.823},
+        {x: 1.253, y: 9.921},
+        {x: 0.628, y: 9.980},
+        {x: 0.000, y: 10.000},
+        {x: -0.628, y: 9.980},
+        {x: -1.253, y: 9.921},
+        {x: -1.874, y: 9.823},
+        {x: -2.487, y: 9.686},
+        {x: -3.090, y: 9.511},
+        {x: -3.681, y: 9.298},
+        {x: -4.258, y: 9.048},
+        {x: -4.818, y: 8.763},
+        {x: -5.358, y: 8.443},
+        {x: -5.878, y: 8.090},
+        {x: -6.374, y: 7.705},
+        {x: -6.845, y: 7.290},
+        {x: -7.290, y: 6.845},
+        {x: -7.705, y: 6.374},
+        {x: -8.090, y: 5.878},
+        {x: -8.443, y: 5.358},
+        {x: -8.763, y: 4.818},
+        {x: -9.048, y: 4.258},
+        {x: -9.298, y: 3.681},
+        {x: -9.511, y: 3.090},
+        {x: -9.686, y: 2.487},
+        {x: -9.823, y: 1.874},
+        {x: -9.921, y: 1.253},
+        {x: -9.980, y: 0.628},
+        {x: -10.000, y: 0.000},
+        {x: -9.980, y: -0.628},
+        {x: -9.921, y: -1.253},
+        {x: -9.823, y: -1.874},
+        {x: -9.686, y: -2.487},
+        {x: -9.511, y: -3.090},
+        {x: -9.298, y: -3.681},
+        {x: -9.048, y: -4.258},
+        {x: -8.763, y: -4.818},
+        {x: -8.443, y: -5.358},
+        {x: -8.090, y: -5.878},
+        {x: -7.705, y: -6.374},
+        {x: -7.290, y: -6.845},
+        {x: -6.845, y: -7.290},
+        {x: -6.374, y: -7.705},
+        {x: -5.878, y: -8.090},
+        {x: -5.358, y: -8.443},
+        {x: -4.818, y: -8.763},
+        {x: -4.258, y: -9.048},
+        {x: -3.681, y: -9.298},
+        {x: -3.090, y: -9.511},
+        {x: -2.487, y: -9.686},
+        {x: -1.874, y: -9.823},
+        {x: -1.253, y: -9.921},
+        {x: -0.628, y: -9.980},
+        {x: -0.000, y: -10.000},
+        {x: 0.628, y: -9.980},
+        {x: 1.253, y: -9.921},
+        {x: 1.874, y: -9.823},
+        {x: 2.487, y: -9.686},
+        {x: 3.090, y: -9.511},
+        {x: 3.681, y: -9.298},
+        {x: 4.258, y: -9.048},
+        {x: 4.818, y: -8.763},
+        {x: 5.358, y: -8.443},
+        {x: 5.878, y: -8.090},
+        {x: 6.374, y: -7.705},
+        {x: 6.845, y: -7.290},
+        {x: 7.290, y: -6.845},
+        {x: 7.705, y: -6.374},
+        {x: 8.090, y: -5.878},
+        {x: 8.443, y: -5.358},
+        {x: 8.763, y: -4.818},
+        {x: 9.048, y: -4.258},
+        {x: 9.298, y: -3.681},
+        {x: 9.511, y: -3.090},
+        {x: 9.686, y: -2.487},
+        {x: 9.823, y: -1.874},
+        {x: 9.921, y: -1.253},
+        {x: 9.980, y: -0.628},
+    ];
+}
+
+export function TestScenePath() : Point[] {
+    let path = [
+        {x: 0.8, y: -0.37},
+        {x: 1.07, y: 0.02},
+        {x: 1.66, y: 0.2},
+        {x: 2.06, y: 0.76},
+        {x: 1.58, y: 1.53},
+        {x: 0.29, y: 1.91},
+        {x: -0.69, y: 1.95},
+        {x: -0.98, y: 1.17},
+        {x: -1.42, y: 0.51},
+        {x: -1.77, y: 0.09},
+        {x: -2.27, y: -0.62},
+        {x: -1.38, y: -1.32},
+        {x: -0.58, y: -1.84}
+    ];
+
+    return path.map(p => ({x: p.x * 10, y: -1 * p.y * 10}));
+}
+
+export class Path {
+    constructor(entity: Entity, path: Point[], pointID: number, currentPosition: Point, currentRotation: number, speed: number) {
+        this.path = path;
+        this.pointID = pointID;
+        this.speed = speed;
+        this.entity = entity;
+        this.currentPosition = currentPosition;
+        this.currentRotation = currentRotation;
+    }
+
+    public move(deltaTime: number = 1) {
+        const targetPoint = this.path[this.pointID];
+        const distanceToTarget = Math.hypot(
+            targetPoint.x - this.currentPosition.x,
+            targetPoint.y - this.currentPosition.y
+        );
+        
+        let stepDistance = Math.min(distanceToTarget, this.speed * deltaTime);
+        let remainingDelta = stepDistance;
+        
+        // Calculate movement delta
+        const delta = { x: 0, y: 0 };
+        
+        if (distanceToTarget > 0) {
+            const direction = {
+                x: (targetPoint.x - this.currentPosition.x) / distanceToTarget,
+                y: (targetPoint.y - this.currentPosition.y) / distanceToTarget
+            };
+            
+            delta.x = direction.x * stepDistance;
+            delta.y = direction.y * stepDistance;
+        }
+        
+        // Apply delta movement
+        this.currentPosition = {
+            x: this.currentPosition.x + delta.x,
+            y: this.currentPosition.y + delta.y
+        };
+        
+        // Handle reaching the target point
+        if (stepDistance >= distanceToTarget) {
+            this.pointID = (this.pointID + 1) % this.path.length;
+            remainingDelta = stepDistance - distanceToTarget;
+            
+            // Apply remaining delta to next segment if needed
+            if (remainingDelta > 0 && this.path.length > 0) {
+                this.applyRemainingMovement(remainingDelta);
+            }
+        }
+
+        const t = distanceToTarget === 0 ? 0 : stepDistance / distanceToTarget;
+        
+        return {
+            type: EventType.MOVE,
+            entity: this.entity,
+            value: {
+                angle: this.rotate(delta, t),
+                point: this.currentPosition,
+                delta: delta
+            },
+        };
+    }
+
+    private applyRemainingMovement(remainingDelta: number) {
+        const nextTargetPoint = this.path[this.pointID];
+        const distanceToNextTarget = Math.hypot(
+            nextTargetPoint.x - this.currentPosition.x,
+            nextTargetPoint.y - this.currentPosition.y
+        );
+        
+        const stepDistance = Math.min(distanceToNextTarget, remainingDelta);
+        
+        if (distanceToNextTarget > 0) {
+            const direction = {
+                x: (nextTargetPoint.x - this.currentPosition.x) / distanceToNextTarget,
+                y: (nextTargetPoint.y - this.currentPosition.y) / distanceToNextTarget
+            };
+            
+            this.currentPosition = {
+                x: this.currentPosition.x + direction.x * stepDistance,
+                y: this.currentPosition.y + direction.y * stepDistance
+            };
+        }
+        
+        if (stepDistance >= distanceToNextTarget) {
+            this.pointID = (this.pointID + 1) % this.path.length;
+        }
+    }
+
+    private rotate(delta: Point, t: number) {
+        if (delta.x === 0 && delta.y === 0) {
+            return this.currentRotation;
+        }
+        
+        const dir = new THREE.Vector3(delta.x, 0, delta.y).normalize();
+        let rotz = Math.atan2(dir.x, dir.z);
+        this.currentRotation = Path.lerpNumber(this.currentRotation, rotz, t);
+        return this.currentRotation;
+    }
+
+    static lerp(p1: Point, p2: Point, t: number): Point {
+        return {
+            x: p1.x + (p2.x - p1.x) * t,
+            y: p1.y + (p2.y - p1.y) * t
+        };
+    }
+
+    static lerpNumber(p1: number, p2: number, t: number): number {
+        return p1 + (p2 - p1) * t;
+    }
+
+    path: Point[];
+    currentPosition: Point;
+    currentRotation: number;
+    pointID: number;
+    speed: number;
+    entity: Entity;
+}
