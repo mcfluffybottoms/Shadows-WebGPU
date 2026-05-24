@@ -58,9 +58,11 @@ import {
     initAPass,
 } from './analytic-shadow-pass';
 import {
-    createLastTestScene
+    createLastTestScene,
+    manyCars
 } from './scene-creator';
 import { PrecomputeOccluders } from './precompute/precompute-occluded';
+import Stats from 'stats-gl';
 
 export type RenderInfo = {
     // device config
@@ -94,7 +96,7 @@ export async function initRender(
     };
 
     // get test scene
-    let scene = await createLastTestScene(gpu, mainConfig, UI.direction);
+    let scene = await manyCars(gpu, mainConfig, UI.direction);
 
     // load view proj matrices
     const { viewProjMatrix, splits } = scene.light.getNewViewProjMatrix(
@@ -325,7 +327,8 @@ export async function updateRenderFromUI(
 export async function getMainTexture(
     renderData: RenderInfo,
     encoder: GPUCommandEncoder,
-    option: renderWhat
+    option: renderWhat,
+    stats: Stats
 ) {
     let { gpu, renderPassResources, scene } = renderData;
     if (option == renderWhat.depthMap) {
@@ -353,14 +356,15 @@ export async function getMainTexture(
         );
         await renderDepthPass(renderDepthPassResources, gpu, encoder);
     } else {
-        await RenderPass(renderPassResources, gpu, encoder, scene);
+        await RenderPass(renderPassResources, gpu, encoder, scene, stats);
     }
 }
 
 export async function renderFrame(
     renderData: RenderInfo,
     UI: UIConfig,
-    flags: UIFlags
+    flags: UIFlags,
+    stats: Stats
 ) {
     const uiChanged = await updateRenderFromUI(renderData, UI, flags);
 
@@ -410,7 +414,8 @@ export async function renderFrame(
             encoder,
             renderData.scene,
             UI.numOfCascades,
-            true
+            true,
+            stats
         );
     }
 
@@ -420,7 +425,8 @@ export async function renderFrame(
             encoder,
             renderData.scene,
             UI.numOfCascades,
-            false
+            false,
+            stats
         );
     }
 
@@ -429,12 +435,15 @@ export async function renderFrame(
             renderData.depthPassForAPassResources,
             encoder,
             renderData.scene,
-            1.0
+            1.0,
+            stats
         );
-        await aPass(renderData.aPassResources, encoder, renderData.scene);
+        await aPass(renderData.aPassResources, encoder, renderData.scene, stats);
     }
 
-    await getMainTexture(renderData, encoder, UI.renderWhat);
+    await getMainTexture(renderData, encoder, UI.renderWhat, stats);
+
+    stats.end(encoder);
     renderData.gpu.device.queue.submit([encoder.finish()]);
 
     renderData.scene.cameraConfig.controls.update();

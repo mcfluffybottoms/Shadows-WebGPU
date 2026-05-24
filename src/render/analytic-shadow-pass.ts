@@ -7,6 +7,7 @@ import { OccluderBuffers } from "../config/occluder-buffer";
 import { UI } from "../UI/UI-flags-types";
 import { DepthMap } from "./depth-pass";
 import { analyticShadowsPass } from "./imported-shaders";
+import Stats from 'stats-gl';
 
 export interface AnalyticPassResources {
     pipeline: GPUComputePipeline;
@@ -120,13 +121,15 @@ export async function initAPass(
 export async function aPass(
     resources: AnalyticPassResources,
     encoder: GPUCommandEncoder,
-    scene: Scene
+    scene: Scene,
+    stats: Stats
 ) {
     const { pipeline, lightBindGroup, entityBindGroups } = resources;
 
     // begin compute pass
     const computePass = encoder.beginComputePass({
         label: "OcclusionComputePass",
+        timestampWrites: stats.getTimestampWrites()
     });
 
     const lightGroup = lightBindGroup;

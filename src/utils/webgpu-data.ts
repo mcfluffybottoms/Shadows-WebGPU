@@ -10,8 +10,9 @@ export async function getWebGPU(): Promise<WebGPUData> {
     const canvas = document.querySelector('canvas') as HTMLCanvasElement;
     const adapter = await navigator.gpu?.requestAdapter({
         featureLevel: 'compatibility',
+        
     });
-    const device = await adapter?.requestDevice();
+    const device = await adapter?.requestDevice({ requiredFeatures: ['timestamp-query'] });
 
     const context = canvas.getContext('webgpu');
     if (!canvas || !adapter || !device || !context) {

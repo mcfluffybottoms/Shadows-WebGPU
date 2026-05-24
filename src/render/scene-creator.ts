@@ -259,3 +259,46 @@ export async function createStaticTestScene(
         cameraConfig: mainConfig,
     };
 }
+
+export async function manyCars(
+    gpu: WebGPUData,
+    mainConfig: CameraConfig,
+    direction: THREE.Vector3
+): Promise<Scene> {
+    // light source
+    const light = new DirectionalLight();
+    light.direction = direction;
+
+    // add object entities
+    let staticEntities = [];
+    let dynamicEntities: Entity[] = [];
+
+    // get first car
+    const gridSize = 5; 
+    const spacing = 5;
+    for(let i = 0; i < 20; i++) {
+        const row = Math.floor(i / 5);
+        const col = i % 5;
+        
+        const x = (col - 2) * spacing;
+        const z = (row - 1.5) * spacing;
+        const position = new THREE.Vector3(x, -0.5, z);
+        dynamicEntities.push(await loadCat(gpu, position,
+        new THREE.Euler(0, undefined, undefined), new THREE.Vector3(0.4, 0.4, 0.4))); 
+    }
+
+    // get the ground
+    const plane = createEntityFromGeometry(
+        gpu,
+        new THREE.BoxGeometry(50, 50, 1),
+        modelType.STATIC,
+        new THREE.Vector3(2, -1, 2),
+        new THREE.Euler(-Math.PI / 2, undefined, undefined),
+        1.0
+    );
+    staticEntities.push(plane);
+
+    const paths: Path[] = [];
+
+    return { staticEntities, dynamicEntities, light, paths, cameraConfig: mainConfig };
+}

@@ -4,6 +4,7 @@ import { vertexBuffers } from "../utils/loader";
 import { ComponentsMap, Entity, Scene } from "../scene/scene-types";
 import { ConfigBuffers } from "../config/config-buffers";
 import { depthMapVertex } from "./imported-shaders";
+import Stats from 'stats-gl';
 
 export type DepthMap = {
     depthTexture: GPUTexture,
@@ -159,7 +160,8 @@ export async function depthPassAll(
     resources: DepthPassResources,
     encoder: GPUCommandEncoder,
     scene: Scene,
-    numOfCascades: number
+    numOfCascades: number,
+    stats: Stats
 ) {
     // get uniform values for depth map render pipeline
     const { pipeline, lightBindGroups, dynamicDepthMap } = resources;
@@ -183,7 +185,8 @@ export async function depthPassAll(
                 depthLoadOp: 'clear',
                 depthStoreOp: 'store'
             },
-            colorAttachments: []
+            colorAttachments: [],
+            timestampWrites: stats.getTimestampWrites()
         });
 
         const lightGroup = lightBindGroups[i];
@@ -248,7 +251,8 @@ export async function depthPass(
     encoder: GPUCommandEncoder,
     scene: Scene,
     numOfCascades: number,
-    isStatic: boolean
+    isStatic: boolean,
+    stats: Stats
 ) {
     // get uniform values for depth map render pipeline
     const { pipeline, lightBindGroups } = resources;

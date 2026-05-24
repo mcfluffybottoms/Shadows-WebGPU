@@ -8,6 +8,7 @@ import { SceneBuffers } from '../scene/scene-buffers';
 import { ConfigBuffers } from '../config/config-buffers';
 import { OccluderBuffers } from '../config/occluder-buffer';
 import { shadowMapFragment, shadowMapVertex } from './imported-shaders';
+import Stats from 'stats-gl';
 
 const MAX_CASCADES = 8;
 
@@ -260,7 +261,8 @@ export async function RenderPass(
     resources: RenderPassResources,
     gpu: WebGPUData,
     encoder: GPUCommandEncoder,
-    scene: Scene
+    scene: Scene,
+    stats: Stats
 ) {
     const { staticEntities, dynamicEntities } = scene;
     const {
@@ -293,6 +295,7 @@ export async function RenderPass(
                 clearValue: { r: 1.0, g: 1.0, b: 1.0, a: 1.0 },
             },
         ],
+        timestampWrites: stats.getTimestampWrites()
     });
 
     renderPass.setBindGroup(1, lightBindGroups);
