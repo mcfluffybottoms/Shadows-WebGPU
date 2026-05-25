@@ -18,6 +18,11 @@ import {
 import { Path } from '../scene/movement/path';
 import retepApprox from '../../public/assets/retep.json';
 import catApprox from '../../public/assets/cat.json';
+
+import carApprox64 from '../../public/assets/car_approx64.json';
+import carApprox32 from '../../public/assets/car_approx32.json';
+import carApprox16 from '../../public/assets/car_approx16.json';
+
 import { getApproximatedGeometry } from '../utils/get-sphere-approximator';
 
 export async function createLastTestScene(
@@ -283,8 +288,8 @@ export async function manyCars(
         const x = (col - 2) * spacing;
         const z = (row - 1.5) * spacing;
         const position = new THREE.Vector3(x, -0.5, z);
-        dynamicEntities.push(await loadCat(gpu, position,
-        new THREE.Euler(0, undefined, undefined), new THREE.Vector3(0.4, 0.4, 0.4))); 
+        dynamicEntities.push(await loadCar(gpu, position,
+        new THREE.Euler(0, 0, 0), new THREE.Vector3(0.005, 0.005, 0.005))); 
     }
 
     // get the ground
@@ -301,4 +306,43 @@ export async function manyCars(
     const paths: Path[] = [];
 
     return { staticEntities, dynamicEntities, light, paths, cameraConfig: mainConfig };
+}
+
+async function loadCar(
+    gpu: WebGPUData,
+    position: THREE.Vector3,
+    rotation: THREE.Euler,
+    scale: THREE.Vector3
+) {
+    let cat = await loadAndAddObject('/Shadows-WebGPU/assets/low_poly_car.glb');
+    if (cat) {
+        cat.scale.set(scale.x, scale.y, scale.z);
+        cat.position.set(position.x, position.y, position.z);
+        cat.rotation.set(rotation.x, rotation.y, rotation.z);
+        cat.updateMatrixWorld(true);
+    } else {
+        throw new Error('NO CAR!');
+    }
+    const catMesh = await getModelBuffers(
+        gpu,
+        cat,
+        modelType.DYNAMIC,
+        position,
+        rotation,
+        scale
+    );
+    let approxedCat = getApproximatedGeometry(
+        carApprox16,
+        new THREE.Vector3(position.x, position.y, position.z),
+        new THREE.Euler(
+            rotation.x,
+            rotation.y,
+            rotation.z
+        ),
+        new THREE.Vector3(0.005, 0.005, 0.005)
+    );
+    console.log(approxedCat);
+    updateApproxedGeometries();
+    ApproxedGeometries.set(catMesh[0], approxedCat);
+    return catMesh[0];
 }

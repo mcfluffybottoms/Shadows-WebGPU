@@ -38,8 +38,8 @@ export function addCamera(canvas: HTMLCanvasElement, type: CameraType): THREE.Or
         );
 
     }
-    camera.position.set(17.733736277643853, 1.8645731021897773, -11.723682572752207);
-    camera.rotation.set(-2.907098534188704, 0.862378271482270, 2.9621339797774384);
+    camera.position.set(27.512627164078346, 24.986035351961362, -21.74882421761431);
+    camera.rotation.set(-1.9660530644694243, 0.46918288992486673, 2.3160210744346243);
     return camera
 }
 
