@@ -72,10 +72,10 @@ fn shadowCalculation(in: FragmentIn, normal: vec3f, lightDir: vec3f) -> f32 {
     projCoords.x = projCoords.x * 0.5 + 0.5;
     projCoords.y = -projCoords.y * 0.5 + 0.5;
     projCoords.z = projCoords.z * 0.5 + 0.5;
-    if (projCoords.z > 1.0 || projCoords.x < 0.0 || projCoords.x > 1.0 ||
-        projCoords.y < 0.0 || projCoords.y > 1.0) {
-        return 1.0;
-    }
+    // if (projCoords.z > 1.0 || projCoords.x < 0.0 || projCoords.x > 1.0 ||
+    //     projCoords.y < 0.0 || projCoords.y > 1.0) {
+    //     return 1.0;
+    // }
     
     var shadow = 0.0;
 
