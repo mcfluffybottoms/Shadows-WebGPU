@@ -1,3 +1,5 @@
+/* disable_uniformity_analysis */
+
 // ----- SCENE SETUP ----- // 
 @group(0) @binding(2) var staticDepthTex: texture_depth_2d_array;
 @group(0) @binding(3) var dynamicDepthTex: texture_depth_2d_array;
