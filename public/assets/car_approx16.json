@@ -1,0 +1,23 @@
+{"primitives":[
+{"type":"mesh","file":"../low_poly_car.obj","bsdf":{"type":"lambert","albedo":0.8}},
+{"type": "sphere","transform":{"position":[-75.0714,101.416,112.114],"scale":121.958},"bsdf":{"type":"lambert","ior":1.3,"albedo":[1,0.6,0.6]}},
+{"type": "sphere","transform":{"position":[-50.8982,122.668,-341.426],"scale":104.718},"bsdf":{"type":"lambert","ior":1.3,"albedo":[1,0.6,0.6]}},
+{"type": "sphere","transform":{"position":[-133.328,67.5934,-26.5693],"scale":73.1096},"bsdf":{"type":"lambert","ior":1.3,"albedo":[1,0.6,0.6]}},
+{"type": "sphere","transform":{"position":[-68.8585,131.259,1.19418],"scale":122.068},"bsdf":{"type":"lambert","ior":1.3,"albedo":[1,0.6,0.6]}},
+{"type": "sphere","transform":{"position":[-27.5451,58.4592,366.789],"scale":129.74},"bsdf":{"type":"lambert","ior":1.3,"albedo":[1,0.6,0.6]}},
+{"type": "sphere","transform":{"position":[77.7192,105.861,-221.43],"scale":142.811},"bsdf":{"type":"lambert","ior":1.3,"albedo":[1,0.6,0.6]}},
+{"type": "sphere","transform":{"position":[-4.54511,151.466,33.5625],"scale":124.719},"bsdf":{"type":"lambert","ior":1.3,"albedo":[1,0.6,0.6]}},
+{"type": "sphere","transform":{"position":[-70.9162,144.383,-134.718],"scale":137.503},"bsdf":{"type":"lambert","ior":1.3,"albedo":[1,0.6,0.6]}},
+{"type": "sphere","transform":{"position":[-131.507,96.0206,-249.317],"scale":121.447},"bsdf":{"type":"lambert","ior":1.3,"albedo":[1,0.6,0.6]}},
+{"type": "sphere","transform":{"position":[-118.552,115.164,272.633],"scale":129.178},"bsdf":{"type":"lambert","ior":1.3,"albedo":[1,0.6,0.6]}},
+{"type": "sphere","transform":{"position":[82.867,98.3103,102.149],"scale":121.429},"bsdf":{"type":"lambert","ior":1.3,"albedo":[1,0.6,0.6]}},
+{"type": "sphere","transform":{"position":[84.9412,116.375,-321.797],"scale":91.7994},"bsdf":{"type":"lambert","ior":1.3,"albedo":[1,0.6,0.6]}},
+{"type": "sphere","transform":{"position":[64.6317,108.739,277.366],"scale":157.54},"bsdf":{"type":"lambert","ior":1.3,"albedo":[1,0.6,0.6]}},
+{"type": "sphere","transform":{"position":[152.495,70.5331,-129.22],"scale":61.9879},"bsdf":{"type":"lambert","ior":1.3,"albedo":[1,0.6,0.6]}},
+{"type": "sphere","transform":{"position":[73.7843,144.41,-40.4483],"scale":141.876},"bsdf":{"type":"lambert","ior":1.3,"albedo":[1,0.6,0.6]}},
+{"type": "sphere","transform":{"position":[157.405,44.0074,293.893],"scale":59.4113},"bsdf":{"type":"lambert","ior":1.3,"albedo":[1,0.6,0.6]}},
+{"type": "skydome","temperature": 4777.0,"gamma_scale": 1.0,"turbidity": 3.0,"intensity": 6.0,"sample": true}],
+"camera":{"resolution":[2048,2048],"transform":{"position": [3,2,-5.76543], "look_at": [0,0,0], "up": [0,1,0]},"type":"pinhole","fov":40},
+"integrator": {"min_bounces": 0,"max_bounces": 16,"type": "path_tracer"},
+"renderer": {"scene_bvh": true,"spp": 16,"output_file": "demo.png"}
+}
