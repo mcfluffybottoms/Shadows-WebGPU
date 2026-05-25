@@ -79,9 +79,9 @@ function createLightBindGroups(
                 resource: gpu.device.createSampler({
                     addressModeU: 'repeat',
                     addressModeV: 'repeat',
-                    magFilter: 'linear',
-                    minFilter: 'linear',
-                    mipmapFilter: 'linear',
+                    magFilter: 'nearest',
+                    minFilter: 'nearest',
+                    mipmapFilter: 'nearest',
                 })
             }
         ]

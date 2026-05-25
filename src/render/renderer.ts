@@ -96,7 +96,7 @@ export async function initRender(
     };
 
     // get test scene
-    let scene = await manyCars(gpu, mainConfig, UI.direction);
+    let scene = await createLastTestScene(gpu, mainConfig, UI.direction);
 
     // load view proj matrices
     const { viewProjMatrix, splits } = scene.light.getNewViewProjMatrix(
