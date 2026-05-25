@@ -21,7 +21,7 @@ struct FragmentIn {
     @location(2) fragNorm: vec3<f32>,
     @location(3) clipPos: vec4f,
     @location(4) uv: vec2<f32>,
-    @location(5) entityId: u32,
+    @location(5) @interpolate(flat) entityId: u32,
 }
 
 // colors for cascade
