@@ -6,23 +6,48 @@
 \usepackage[T1]{fontenc}
 \usepackage{tgbonum}
 
+\usepackage[style=authortitle]{biblatex} % Select your style (e.g., authoryear, numeric, apa)
+\addbibresource{references.bib}
+
+\newcounter{pageinsection}
+\newcounter{totpagesection}
+
 \setbeameroption{hide notes}
 \setbeamertemplate{footline}{
+
+    \setcounter{pageinsection}{\value{page}}%
+    \addtocounter{pageinsection}{1}%
+    \addtocounter{pageinsection}{-\insertsectionstartpage}%
+    \setcounter{totpagesection}{\insertsectionendpage}%
+    \addtocounter{totpagesection}{1}%
+    \addtocounter{totpagesection}{-\insertsectionstartpage}%
+
     \leavevmode
     \begin{beamercolorbox}[ht=2.5ex,dp=1.125ex,leftskip=1em,rightskip=.3em]{author in head/foot}
         \usebeamerfont{author in head/footer}Алтунина Екатерина Юрьевна
         \hfill
-        \usebeamerfont{page number in head/foot}\insertframenumber\,/\,\inserttotalframenumber\hspace{1em}
+        \usebeamerfont{page number in head/foot}\thepageinsection\,/\,\thetotpagesection\hspace{1em}
     \end{beamercolorbox}
     \vspace{0.2em}
 }
 % TITLE PAGE
-\title[Short title]{Визуализация теней в реальном времени }
-\date[02.02.2026]{Апрель, 2026}
-\author[author]{Алтунина Екатерина Юрьевна}
-\institute{Руководитель: Романов Алексей Алексеевич\and ИПКН ИТМО, программа «Разработка программного обеспечения»\and(Санкт-Петербург)}
+% \setbeamerfont{title}{size=\Huge}
 
-
+\title{ Визуализация теней в реальном времени }
+\date[02.02.2026]{Май, 2026}
+\author[author]{\begin{tabular}{c}
+    Алтунина Екатерина Юрьевна \\
+    Руководитель: Аксенов Виталий Евгеньевич \\
+    Консультант: Романов Алексей Алексеевич
+  \end{tabular}
+}
+\institute{%
+  \begin{tabular}{c}
+    ИПКН ИТМО \\
+    Программа «Разработка программного обеспечения / Software Engineering» \\
+    Санкт‑Петербург, Россия
+  \end{tabular}
+}
 % \setbeamerfont{normal text}{family=\sffamily}
 % \setbeamerfont{structure}{family=\sffamily}
 
@@ -39,6 +64,7 @@
 % }
 %_____________________________________________________
 % 
+
 \section{Section 1}
 \subsection{Subsection 1.1}
 \frame{{Введение в предметную область} 
@@ -51,8 +77,8 @@
     В условиях веб-браузера приходится находить разумный 
     компромисс между реалистичностью теней и скоростью работы сцены.
     \column{0.3\textwidth}
-    \includegraphics[width=\textwidth]{no shadows.PNG}
-    \includegraphics[width=\textwidth]{shadows.PNG}
+    \includegraphics[width=\textwidth]{figures/no shadows.PNG}
+    \includegraphics[width=\textwidth]{figures/shadows.PNG}
 \end{columns}
 }
 
@@ -64,106 +90,173 @@
 \footnotesize
 \begin{tabular}{|l|c|c|c|c|c|}
 \hline
-\textbf{Метод} & \textbf{Скорость} & \textbf{Память} & \textbf{Область} & \textbf{Качество} & \textbf{Вывод} \\
+\textbf{Метод} & \textbf{Скорость} & \textbf{Память} & \textbf{Область}  & \textbf{Дин. об.} & \textbf{Вывод} \\
 \hline
-Планарные тени    & + & + & - & - & Малая обл. применения \\
+Планарные тени \footnote{Real-Time Rendering, Taylor\&Francis Group} & + & + & -- & -- & Малая обл. применения \\
 \hline
-Теневой объем     & {\tiny$\pm$} & {\tiny$\pm$} & + & + & Зависит от покрытых пикселей \\
+Теневой объем \footnotemark[1] & {\tiny$\pm$} & -- & + & -- & Перестройка тен. об. \\
 \hline
-Трассировка лучей & - & - & + & + & Высокая сложность \\
+Глобальное освещение \footnotemark[1] & -- & -- & + & -- & Высокая сложность \\
 \hline
-Карты теней       & {\tiny$\pm$} & {\tiny$\pm$} & + & {\tiny$\pm$} & \textbf{Используем} \\
+Карты теней       & + & {\tiny$\pm$} & + & {\tiny$\pm$} & \textbf{Для статич. объектов} \\
+\hline
+Аналитические тени       & {\tiny$\pm$} & + & + & + & \textbf{Для дин. объектов} \\
 \hline
 \end{tabular}
 \caption{Сравнение методов рендеринга теней}
 \end{table}
 
+\centering
+\includegraphics[width=0.8\textwidth]{figures/planar.png}
+
+}
+
+\subsection{Subsection 1.2}
+\frame{{Существующие решения} 
+
+\begin{table}[h]
+\centering
+\footnotesize
+\begin{tabular}{|l|c|c|c|c|c|}
+\hline
+\textbf{Метод} & \textbf{Скорость} & \textbf{Память} & \textbf{Область}  & \textbf{Дин. об.} & \textbf{Вывод} \\
+\hline
+Планарные тени    & + & + & -- & -- & Малая обл. применения \\
+\hline
+Теневой объем     & {\tiny$\pm$} & -- & + & -- & Перестройка тен. об. \\
+\hline
+Трассировка лучей & -- & -- & + & -- & Высокая сложность \\
+\hline
+Карты теней       & + & {\tiny$\pm$} & + & {\tiny$\pm$} & \textbf{Для статич. объектов} \\
+\hline
+Аналитические тени       & {\tiny$\pm$} & + & + & + & \textbf{Для дин. объектов} \\
+\hline
+\end{tabular}
+\caption{Сравнение методов рендеринга теней}
+\end{table}
+
+\centering
+\includegraphics[width=0.8\textwidth]{figures/volume.png}
+
+}
+
+\subsection{Subsection 1.2}
+\frame{{Существующие решения} 
+
+\begin{table}[h]
+\centering
+\footnotesize
+\begin{tabular}{|l|c|c|c|c|c|}
+\hline
+\textbf{Метод} & \textbf{Скорость} & \textbf{Память} & \textbf{Область}  & \textbf{Дин. об.} & \textbf{Вывод} \\
+\hline
+Планарные тени    & + & + & -- & -- & Малая обл. применения \\
+\hline
+Теневой объем     & {\tiny$\pm$} & -- & + & -- & Перестройка тен. об. \\
+\hline
+Трассировка лучей & -- & -- & + & -- & Высокая сложность \\
+\hline
+Карты теней       & + & {\tiny$\pm$} & + & {\tiny$\pm$} & \textbf{Для статич. объектов} \\
+\hline
+Аналитические тени       & {\tiny$\pm$} & + & + & + & \textbf{Для дин. объектов} \\
+\hline
+\end{tabular}
+\caption{Сравнение методов рендеринга теней}
+\end{table}
+
+\centering
+\includegraphics[width=0.75\textwidth]{figures/glillum.png}
+
 }
 
 \subsection{Subsection 1.3}
-\frame{{Карты теней} 
-
-Универсальное и высокопроизводительное решение.
-
-\begin{itemize} 
-\item (+) Подходит для создания теней от различных источников света (точечных, направленных, прожекторов)
-\item (+) Относительно предсказуемы в плане оценки стоимости построения карты теней
-\item (--) Наличие артефактов
-\item (--) Требуется строить одну или несколько карт теней для каждого источника света
-\end{itemize}
-
-}
-
-\subsection{Subsection 1.7}
-\frame{{Аналитические тени} 
-
-Аналитические тени -
-это метод вычисления теней без использования карт глубины, текстур или растеризации. 
-Вместо этого тень рассчитывается математически, по формуле, прямо в шейдере, на основе формы объекта-источника тени.
-\vspace{0.5em}
-
-\begin{center}
-    \includegraphics[width=0.6\textwidth]{analytic-shadows.jpg}
-\end{center}
-}
-
-%_____________________________________________________
-%
-\section{Section 2}
-\subsection{Subsection 2.1}
-\frame{{Цель и задачи} 
-{} 
-
-Цель: оценить применимость и производительность метода аналитических теней в браузере и скомбинировать его с классическими подходами теневых карт.
-\vspace{1em}
-
-Задачи:
-\begin{itemize} 
-    \item Создать Web-песочницу с использованием WebGPU, реализовать навигацию по сцене и классический подход к визуализации теней - карту теней с фиксированным шагом
-    \item Разработать систему раздельного рендеринга динамических/статических объектов и аналитические тени для динамических объектов на простых геометрических формах. Предусмотрев возможность изменения параметров, влияющих на отрисовку теней.
-    \item Совместить оба способа, оценить корректность отрисовки теней и провести анализ производительности (FPS, время кадра, нагрузка на GPU) при различных сценариях
-    \item Провести валидацию полученных данных
-\end{itemize}
-}
-
-\section{Section 3}
-\subsection{Subsection 3.1}
-\frame{{Создание веб-песочницы} 
-{}
+\frame{{Карты теней}
 
 \begin{columns}
-    \column{0.65\textwidth}
-    На первом этапе разработки:
+\column{0.5\textwidth}
+    \centering
+    Решение, основанное на построении карты глубины со стороны источника света \footnote{Shadow Mapping Algorithms, Gary King}
+    \vspace{0.5em}
     \begin{itemize} 
-        \item Реализована навигация по сцене
-        \item Поддержано два вида камеры -  ортографическая и перспективная.
-        \item Для работы с камерой и навигацией - Three.JS
+        \item (+) Для различных источников света
+        \item (+) Предсказуемы в плане оценки стоимости построения карты теней
+        \item (+) Карту теней можно переиспользовать
+        \item (--) Наличие артефактов
+        \item (--) Иногда надо много карт теней
+        \item (--) Невозможность построить тень для объекта, отбрасывающего тень в затененной области
+        \item (--) Базово не поддерживают мягкие тени
     \end{itemize}
-    \column{0.3\textwidth}
-    \includegraphics[width=1.0\textwidth]{1.jpg}
+\column{0.5\textwidth}
+    \centering
+    \includegraphics[width=0.6\textwidth]{figures/shadowmaps-shadows.png}
 \end{columns}
 
 }
 
-\section{Section 3}
-\subsection{Subsection 3.2}
-\frame{{Реализация метода каскадных теней} 
-{}
+\subsection{Subsection 1.7}
+\frame{{Аналитические тени}
 
-На втором этапе разработки:
-\begin{itemize} 
-    \item Реализован метод каскадных теней (до 8 каскадов)
-    \item Динамический расчет границ отсечения каскадов в зависимости от положения камеры
-    \item Добавлена визуализация отладочного режима каскадов (отображение цветовых зон)
-\end{itemize}
-
-\begin{center}
-    \includegraphics[width=0.6\textwidth]{casc.png}
-\end{center}
+\begin{columns}
+\column{0.5\textwidth}
+    \centering
+    Решение, основанное на аппроксимации модели более простыми фигурами \footnote{Ambient Aperture Lighting, Christopher Oat and Pedro V. Sander}
+    \vspace{0.5em}
+    \begin{itemize} 
+        \item (+) Быстрое решение
+        \item (+) Мягкие тени
+        \item (+) Мало памяти
+        \item (+) Возможность затенить области, уже подверженные влиянию теней
+        \item (--) Нужно аппроксимировать модель
+        \item (--) Время работы зависит от количества примитивов
+    \end{itemize}
+\column{0.5\textwidth}
+    \centering
+    \includegraphics[width=0.6\textwidth]{figures/analytic-shadows.PNG}
+\end{columns}
 
 }
 
-\section{Section 3}
+%_____________________________________________________
+%
+
+\subsection{Subsection 2.1}
+\frame{{Цель и задачи} 
+{} 
+
+\textbf{Цель работы:} оценить применимость и производительность метода аналитических теней для отрисовки динамических объектов в браузере.
+\vspace{1em}
+
+\textbf{Задачи:}
+\begin{enumerate}
+    \item Создать Web-песочницу с использованием WebGPU, реализовать классический подход к визуализации теней - карту теней.
+    \item Реализовать метод аналитических теней для динамических объектов на произвольных геометрических формах и предусмотреть возможность изменения параметров, влияющих на отрисовку теней.
+    \item Провести анализ производительности и визуально оценить качество предложенного решения. 
+\end{enumerate}
+}
+
+\subsection{Subsection 3.1}
+\frame{{Реализация карты теней} 
+
+\hspace{1cm}% Adjust the length as needed
+\begin{columns}
+\column{0.5\textwidth}
+    На первом этапе разработки:
+    \vspace{0.5em}
+    \begin{itemize} 
+        \item Реализована навигация по сцене с двумя видами камер (для работы с камерой и навигацией - Three.js)
+        \item Реализован метод каскадных теней (до 8 каскадов)
+        \item Динамический расчет границ отсечения каскадов в зависимости от положения камеры
+    \end{itemize}
+\column{0.5\textwidth}
+    \hfill
+    \left.
+    \includegraphics[width=1.0\textwidth]{figures/casc.png}
+    \right\
+
+\end{columns}
+
+}
+
 \subsection{Subsection 3.3}
 \frame{{Борьба с артефактами} 
 {}
@@ -172,48 +265,269 @@
 \begin{table}[h]
     \centering
     \begin{tabular}{ccc}
-        \textbf{Алиасинг} & \textbf{«Теневые прыщи»} & \textbf{Обрезание теней} \\
-        \includegraphics[width=0.2\textwidth]{aliasing-no-pcf.jpg} & 
-        \includegraphics[width=0.3\textwidth]{shadow-acne.jpg} & 
-        \includegraphics[width=0.3\textwidth]{cutoutshadows.jpg} \\
+        \textbf{Алиасинг} & \textbf{Самозатенение} & \textbf{Большое смещение} \\
+        \parbox{0.3\textwidth}{\centering Cтупенчатости границы тени, дрожание линии теней} &
+        \parbox{0.3\textwidth}{\centering Фрагмент ошибочно затеняет сам себя} &
+        \parbox{0.3\textwidth}{\centering Тень «отрывается» от объекта} \\
+        \includegraphics[width=0.3\textwidth]{figures/pcf.png} & 
+        \includegraphics[width=0.3\textwidth]{figures/zfighting.png} & 
+        \includegraphics[width=0.3\textwidth]{figures/peterpanning.png} \\
         \parbox{0.3\textwidth}{\centering \textbf{Метод борьбы:} PCF (Percentage Closer Filtering) --- Сглаживание краёв} & 
         \parbox{0.3\textwidth}{\centering \textbf{Метод борьбы:} Смещение (depth bias)} & 
-        \parbox{0.3\textwidth}{\centering \textbf{Метод борьбы:} Вписывание сцены во фруструм} \\
+        \parbox{0.3\textwidth}{\centering \textbf{Метод борьбы:} Отсечение лицевых полигонов} \\
     \end{tabular}
+\end{table}
+
+}
+
+\subsection{Subsection 3.5}
+\frame{{Аналитические тени} 
+{}
+
+\begin{columns}
+\column{0.5\textwidth}
+    На втором этапе разработки:
+    \vspace{0.5em}
+    \begin{itemize}
+        \item Получено несколько аппроксимированных моделей
+        \item Реализован метод аналитических теней на основе аппроксимирующих примитивов
+        \item Реализован алгоритм расчёта примитивов, пересекающих заданный тайл
+    \end{itemize}
+    В качестве параметров на отдачу пользователю -- угол распространения полутени
+\column{0.5\textwidth}
+    \begin{tabular}{p{1.00\textwidth}}
+        \includegraphics[width=1.0\textwidth]{figures/as.jpg} \\
+        \includegraphics[width=1.0\textwidth]{figures/preambule_change.png} \\
+    \end{tabular}
+\end{columns}
+}
+
+\subsection{Subsection 3.6}
+\frame{{Тайлинг при использовании аналитических теней} 
+{}
+
+\begin{columns}
+\column{0.5\textwidth}
+    Принцип работы тайловой отбраковки в данной работе
+    \vspace{0.5em}
+    \begin{itemize}
+        \item Падение тени представляется в виде цилиндра
+        \item Ищется пересечение цилиндра и фрустума тайла
+        \item Кернел на один тайл с параллельной проверкой примитивов на пересечение
+    \end{itemize}
+\column{0.5\textwidth}
+    \hfill
+    \left.
+    \includegraphics[width=1.0\textwidth]{figures/tile-culling.png}
+    \right\
+
+\end{columns}
+
+}
+
+\subsection{Subsection 3.7}
+\frame{{Получение теней на этапе рендеринга} 
+{}
+
+\begin{columns}
+\column{0.5\textwidth}
+    Расчет освещенности \footnote{Ambient Aperture Lighting, Christopher Oat and Pedro V. Sander}:
+    \begin{itemize}
+    \item Представляется как площадь пересечения двух сферических сегментов
+    \item В данной работе считается с помощью аппроксимирующей формулы
+    \item При наличии нескольких примитивов на тайле -- перемножаются
+    \end{itemize}
+\column{0.5\textwidth}
+    \hfill
+    \left.
+    \includegraphics[width=1.0\textwidth]{figures/analytic-shadows1.png}
+    \right\
+
+\end{columns}
+
+}
+
+\subsection{Subsection 3.8}
+\frame{{Комбинация методов} 
+{}
+
+\begin{columns}
+\column{0.5\textwidth}
+
+    Пайплайн построения теней для сцены с динамическими объектами при использовании карт теней устроен так:
+    \begin{itemize} 
+        \item При изменении положения камеры идет перестройка карты теней для статических объектов
+        \item На каждом кадре идет запуск вычислительного шейдера для расчета количества примитивов для тайлов для динамических объектов
+    \end{itemize}
+\column{0.5\textwidth}
+    \hfill
+    \left.
+    \includegraphics[width=1.0\textwidth]{figures/double-shadow-2.png}
+    \right\
+\end{columns}
+
+}
+
+\frame{{Замеры скорости работы} 
+{}
+
+Исследование сцены из 20 моделей, аппроксимированных 64, 32, 16 примитивами на поле размером 50х50.
+
+Все замеры выполнялись в браузере Mozilla Firefox 150.0.3 (64-разрядный)
+с поддержкой WebGPU на видеокарте Intel(R) Iris(R) Xe Graphics и процессоре 11th Gen Intel(R) Core(TM) i7-1165G7 @ 2.80GHz.
+
+\includegraphics[width=1.0\textwidth]{figures/scene-to-validate.jpg}
+
+}
+
+
+\frame{{Замеры скорости работы} 
+{}
+
+Замеры производительности аналитических теней в зависимости от количества примитивов
+
+\begin{table}[h]
+\centering
+\scalebox{0.9}{  % Adjust this value (0.6-0.8) as needed
+\begin{tabular}{|l|ll|ll|ll|ll|}
+\hline
+                              & 16                           &                                & 32                           &                                & 64                           &            & нет                          &           \\ \hline
+\multicolumn{1}{|c|}{}        & \multicolumn{1}{c|}{FPS}     & \multicolumn{1}{c|}{ms/frame}  & \multicolumn{1}{l|}{FPS}     & \multicolumn{1}{c|}{ms/frame}  & \multicolumn{1}{l|}{FPS}     & ms/frame   & \multicolumn{1}{l|}{FPS}     & ms/frame  \\ \hline
+25x25                         & \multicolumn{1}{l|}{19-21} & 16,60-83,5                      & \multicolumn{1}{l|}{11-12} & 50,00-113,4                      & \multicolumn{1}{l|}{9} & 50,5-200,8 & \multicolumn{1}{l|}{}        &           \\ \cline{1-7}
+50x50                         & \multicolumn{1}{l|}{22-22} & 16,60-83,5                      & \multicolumn{1}{l|}{12} & 33,3-133,4                      & \multicolumn{1}{l|}{9} & 50,5-170,2 & \multicolumn{1}{l|}{60-61} & 16,30-17,10 \\ \cline{1-7}
+\multicolumn{1}{|c|}{100x100} & \multicolumn{1}{c|}{22-22} & \multicolumn{1}{c|}{16,60-83,5} & \multicolumn{1}{l|}{12} & \multicolumn{1}{c|}{82,7-100,9} & \multicolumn{1}{l|}{9} & 83,10-133,70 & \multicolumn{1}{l|}{}        &           \\ \hline
+\end{tabular}
+}
+\caption{Сравнение производительности для аналитических теней}
+\label{tab:speed-as}
+\end{table}
+
+Замеры производительности карты теней в зависимости от
+количества каскадов
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|l|l|}
+\hline
+    & FPS   & ms/frame  \\ \hline
+нет & 60    & 16,5-16,7 \\ \hline
+1   & 60    & 16,5-16,7 \\ \hline
+4   & 60    & 16,5-16,7 \\ \hline
+8   & 57-60 & 16,5-17,0 \\ \hline
+\end{tabular}
+\caption{Сравнение производительности для карты теней}
+\label{tab:speed-sm}
 \end{table}
 }
 
-
-\section{Section 3}
-\subsection{Subsection 3.5}
-\frame{{Система для разделения рендеринга динамических и статических объектов} 
+\subsection{Subsection 3.213}
+\frame{{Потребление по памяти} 
 {}
 
-Пайплайн построения теней для сцены с динамическими объектами при использовании карт теней сейчас устроен так:
-\begin{itemize} 
-    \item На входе - две карты теней. На одной отрисовываются статические объекты, на другой - динамические
-    \item При изменении положения камеры идет перестройка карты теней для статических объектов
-    \item Каждые 0,05 секунд или при изменении положения камеры идет перестройка карты теней для группы динамических объектов
-\end{itemize}
+\begin{columns}
+\column{0.3\textwidth}
+    Сравнение метода аналитических теней с картой теней
+    \begin{itemize}
+    \item Карты теней: 4 направленных источника света. PCSS с радиусами от 8 до 16. Размер карты теней - 2048 на 2048
+    \item Одна модель аппроксимирована 64 примитивами. Размер поля - 100х100
+    \end{itemize}
+\column{0.7\textwidth}
+    \hfill
+    \left.
+    \includegraphics[width=1.0\textwidth]{figures/validation.png}
+    \right\
+
+    \begin{table}[h]
+    \centering
+    \begin{tabular}{|c|c|c|c|}
+    \hline
+                    & Всего    & Буфер   & Текстуры \\ \hline
+    Аналитические тени & 25,8 Мб  & 11,8 Мб & 6,0 Мб   \\ \hline
+    Карты теней        & 217,8 Мб & 568 Кб  & 213,9 Мб \\ \hline
+    \end{tabular}
+    \caption{Сравнение использования памяти}
+    \label{tab:memory}
+    \end{table}
+\end{columns}
 
 }
 
-\section{Section 4}
 \subsection{Subsection 4.1}
 \frame{{Вывод} 
 {}
 
-На данный момент:
+По результатам работы:
 
-\begin{itemize}  
-\item Есть работающая песочница. Реализован классический метод каскадных теней.
-\item Разработана система для разделения статических и динамических объектов.
-\item Начата работа по имплементации аналитических теней.
-\end{itemize}
+\begin{enumerate}
+    \item  Реализована система каскадных теней с использованием WebGPU для статических объектов. Для борьбы с артефактами использовали PCF, а также смещение.
+
+    \item  Реализован метод аналитических теней на основе сферической аппроксимации геометрии для динамических объектов.
+
+    \item  Разработан метод комбинирования теней для сцен, содержащих как статические, так и динамические объекты.
+
+    \item  Выполнен анализ производительности предложенного подхода в браузере:
+    
+    \begin{enumerate}
+        \item  результаты замеров скорости работы показали худшую производительность по сравнению с картами теней и сильно зависели от количества примтивов на сцене;
+
+        \item  результаты замеров потребления памяти продемонстрировали существенно сниженные требования к объёму используемой памяти по сравнению с альтернативными подходами.
+    \end{enumerate}
+\end{enumerate}
+}
+
+\section{Section 2}
+\frame{{Вопрос 1} 
+
+Аппроксимация сделана с помощью сфер. 
+Есть ли возможность адаптации подхода для вытянутых объектов? 
+В чем может заключаться такая адаптация? Как это может сказаться на производительности?
+\noindent\rule{\textwidth}{0.4pt}
+Да. Возможно ввести в качестве примитива эллипсоид, ведь это по сути вытянутая по определенной оси сфера.
+
+\vspace{0.5cm}
+
+Тогда для проверки пересечений делается следующее -- мы преобразуем конус в пространство
+эллипсоида и уменьшаем этот конус (вместе с направлением конуса) вдоль главной оси, чтобы эллипсоид стал сферой.
+Угол эллипсоида остается прежним.
+
+\vspace{0.5cm}
+
+Далее выполняется тот же тест на обоих этапах работы -- на отбраковке и на получении тени, -- только с модицифированным конусом.
 
 }
 
-\subsection*{Section 5}
+\frame{{Вопрос 2} 
+В рамках работы отсутствуют замеры производительности на мобильных устройствах.
+Например, замеры для следующих сценариев: сцена со статическими тенями,
+сцена со статическими тенями и одним динамическим объектом, аппроксимированным одной и десятью сферами.
+\noindent\rule{\textwidth}{0.4pt}
+
+Да, отсутствуют.
+
+}
+
+\frame{{Вопрос 3} 
+Замеры производительность имеют ограничение в виде частоты синхронизации кадров и,
+соответственно, недостаточную гранулярность.
+Является ли это ограничением webgpu или ограничением работы в рамках браузера?
+Есть ли возможность сделать замер именно gpu тактов, требуемых для визуализации?
+\noindent\rule{\textwidth}{0.4pt}
+
+Это является ограничением в браузере. 
+Если измерять через время между вызовами операции нового кадра (requestAnimationFrame())то результат зависит не только от работы GPU, но и от частоты обновления дисплея, планировщика браузера, и других факторов.
+
+\vspace{0.5cm}
+
+Замеры именно тактов сделать нельзя. Есть возможность (не на всех устройствах и не на всех браузерах) замерить время нахождения на
+видеокарте при помощи timestamp queries.
+
+\vspace{0.5cm}
+
+Между промежутками, которые нужно замерить, можно вставить временные метки в командный буфер.
+После выполнения можно получить время между двумя метками. Это даст время, проведенное на видеокарте.
+
+}
+
 \frame{{Карты теней} 
 
 Алгоритм:
@@ -224,28 +538,37 @@
 \item Если пиксель невидим с точки зрения источника света, он закрашивается тёмным цветом.
 \end{itemize}
 \begin{columns}
-    \column{0.3\textwidth}
-    \includegraphics[width=\textwidth]{depthmap.PNG}
-    \column{0.3\textwidth}
-    \includegraphics[width=\textwidth]{shadows.PNG}
+    \column{0.5\textwidth}
+    \includegraphics[width=\textwidth]{figures/smapvis.png}
 \end{columns}
 }
 
-\subsection*{Section 6}
-\frame{{Артефакты}
+\frame{{Формулы для расчета аналитических теней} 
 
-\vspace{0.5em}
-\begin{columns}
-    \column{0.3\textwidth}
-    Алиасинг
-    \includegraphics[width=\textwidth]{aliasing-no-pcf.jpg}
-    \column{0.3\textwidth}
-    <<Теневые прыщи>>
-    \includegraphics[width=\textwidth]{shadow-acne.jpg}
-    \column{0.3\textwidth}
-    Обрезание теней
-    \includegraphics[width=\textwidth]{cutoutshadows.jpg}
-\end{columns}
+Рассеяная составляющая
+\[
+\text{Diffuse} = C_{\text{ambient}} + C_{\text{dir}} \cdot \max(\vec{n} \cdot \vec{l}, 0),
+\]
+где $\vec{n}$ — нормаль, $\vec{l}$ — направление света.
+
+Фоновая составляющая ($C_{\text{ambient}}$)
+
+\begin{equation}
+O = \sin^2 \theta_{\text{max}} = \left( \frac{r}{d} \right)^2,
+\end{equation}
+
+где $d$ -- расстояние от точки до центра примитива, $\theta_{\text{max}} = \arcsin(r/d)$ -- угловой радиус сферы.
+
+Направленная составляющая ($C_{\text{dir}}$)
+\begin{equation}
+\left(2\pi - 2\pi \cos\bigl(\min(r_p, r_l)\bigr)\right) \cdot 
+\operatorname{smoothstep}\!\left(0,\;1,\; 1 - \frac{d -|r_p - r_l|}{r_p + r_l - |r_p - r_l|}\right),
+\end{equation}
+\[
+\operatorname{smoothstep}(a, b, x) = -2\left(\frac{x - a}{b - a}\right)^3 + 3\left(\frac{x - a}{b - a}\right)^2.
+\]
+Здесь $r_p$, $r_l$ — области на полусфере; $d$ — расстояние дуги между центроидами двух окружностей.
+
 }
 
 \end{document}
